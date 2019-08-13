@@ -11,6 +11,103 @@ Simple shape editor component
 npm i react-shape-editor
 ```
 
+## Usage
+
+```jsx
+import React from 'react';
+import {
+  ShapeEditor,
+  ImageLayer,
+  DrawLayer,
+  wrapShape,
+} from 'react-shape-editor';
+
+function arrayReplace(arr, index, item) {
+  return [
+    ...arr.slice(0, index),
+    ...(Array.isArray(item) ? item : [item]),
+    ...arr.slice(index + 1),
+  ];
+}
+
+const RectShape = wrapShape(({ width, height }) => (
+  <rect width={width} height={height} fill="rgba(0,0,255,0.5)" />
+));
+
+let idIterator = 1;
+export default class Editor extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      items: [
+        { id: '1', x: 20, y: 50, width: 50, height: 25 },
+        { id: '2', x: 120, y: 0, width: 20, height: 75 },
+      ],
+      vectorWidth: 0,
+      vectorHeight: 0,
+    };
+  }
+
+  render() {
+    const { items, vectorWidth, vectorHeight } = this.state;
+
+    return (
+      <div style={{ height: 400 }}>
+        <ShapeEditor vectorWidth={vectorWidth} vectorHeight={vectorHeight}>
+          <ImageLayer
+            src="https://raw.githubusercontent.com/fritz-c/react-shape-editor/d8661b46d07d832e316aacc906a0d603a3bb13a2/website/blank.png"
+            onLoad={({ naturalWidth, naturalHeight }) => {
+              this.setState({
+                vectorWidth: naturalWidth,
+                vectorHeight: naturalHeight,
+              });
+            }}
+          />
+          <DrawLayer
+            onAddShape={({ x, y, width, height }) => {
+              this.setState(state => ({
+                items: [
+                  ...state.items,
+                  { id: `id${idIterator}`, x, y, width, height },
+                ],
+              }));
+              idIterator += 1;
+            }}
+          />
+          {items.map((item, index) => {
+            const { id, height, width, x, y } = item;
+            return (
+              <RectShape
+                key={id}
+                shapeId={id}
+                height={height}
+                width={width}
+                x={x}
+                y={y}
+                onChange={newRect => {
+                  this.setState(state => ({
+                    items: arrayReplace(state.items, index, {
+                      ...item,
+                      ...newRect,
+                    }),
+                  }));
+                }}
+                onDelete={() => {
+                  this.setState(state => ({
+                    items: arrayReplace(state.items, index, []),
+                  }));
+                }}
+              />
+            );
+          })}
+        </ShapeEditor>
+      </div>
+    );
+  }
+}
+```
+
 ## Components
 
 ### ShapeEditor
@@ -134,103 +231,6 @@ Creates an invisible layer of the SVG that allows users to select shapes via mou
 | keyboardTransformMultiplier       |        `number`        |                                   `1`                                   | Multiplier for keyboard-triggered transforms, such as `↑↓←→` keys to move or `shift`+`↑↓←→` keys to resize. For example, with the default setting of `1`, pressing `→` would move shapes in the selection 1 px to the right. With a setting of `5`, they would move 5px.                                                                 |
 | selectionComponentProps           |        `object`        |                                  `{}`                                   | Extra props to pass to the `SelectionComponent`.                                                                                                                                                                                                                                                                                         |
 | children                          |  renderable elements   |                                 `null`                                  | `wrapShape`-wrapped shapes that are targets for selection by this selection group. Can also include other library components (`SelectionLayer`/`ImageLayer`/`DrawLayer`) or arbitrary SVG elements.                                                                                                                                      |
-
-## Usage
-
-```jsx
-import React from 'react';
-import {
-  ShapeEditor,
-  ImageLayer,
-  DrawLayer,
-  wrapShape,
-} from 'react-shape-editor';
-
-function arrayReplace(arr, index, item) {
-  return [
-    ...arr.slice(0, index),
-    ...(Array.isArray(item) ? item : [item]),
-    ...arr.slice(index + 1),
-  ];
-}
-
-const RectShape = wrapShape(({ width, height }) => (
-  <rect width={width} height={height} fill="rgba(0,0,255,0.5)" />
-));
-
-let idIterator = 1;
-export default class Editor extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      items: [
-        { id: '1', x: 20, y: 50, width: 50, height: 25 },
-        { id: '2', x: 120, y: 0, width: 20, height: 75 },
-      ],
-      vectorWidth: 0,
-      vectorHeight: 0,
-    };
-  }
-
-  render() {
-    const { items, vectorWidth, vectorHeight } = this.state;
-
-    return (
-      <div style={{ height: 400 }}>
-        <ShapeEditor vectorWidth={vectorWidth} vectorHeight={vectorHeight}>
-          <ImageLayer
-            src="https://raw.githubusercontent.com/fritz-c/react-shape-editor/d8661b46d07d832e316aacc906a0d603a3bb13a2/website/blank.png"
-            onLoad={({ naturalWidth, naturalHeight }) => {
-              this.setState({
-                vectorWidth: naturalWidth,
-                vectorHeight: naturalHeight,
-              });
-            }}
-          />
-          <DrawLayer
-            onAddShape={({ x, y, width, height }) => {
-              this.setState(state => ({
-                items: [
-                  ...state.items,
-                  { id: `id${idIterator}`, x, y, width, height },
-                ],
-              }));
-              idIterator += 1;
-            }}
-          />
-          {items.map((item, index) => {
-            const { id, height, width, x, y } = item;
-            return (
-              <RectShape
-                key={id}
-                shapeId={id}
-                height={height}
-                width={width}
-                x={x}
-                y={y}
-                onChange={newRect => {
-                  this.setState(state => ({
-                    items: arrayReplace(state.items, index, {
-                      ...item,
-                      ...newRect,
-                    }),
-                  }));
-                }}
-                onDelete={() => {
-                  this.setState(state => ({
-                    items: arrayReplace(state.items, index, []),
-                  }));
-                }}
-              />
-            );
-          })}
-        </ShapeEditor>
-      </div>
-    );
-  }
-}
-```
 
 ## Contributing
 
