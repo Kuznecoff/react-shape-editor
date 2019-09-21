@@ -6,7 +6,7 @@ import {
   getRectFromCornerCoordinates,
   defaultConstrainMove,
   defaultConstrainResize,
-} from './utils';
+} from './utils.ts';
 
 const defaultDragState = {
   isMouseDown: false,

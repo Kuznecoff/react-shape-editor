@@ -4,7 +4,7 @@ import {
   getRectFromCornerCoordinates,
   defaultConstrainMove,
   defaultConstrainResize,
-} from './utils';
+} from './utils.ts';
 import withContext from './withContext';
 import DefaultDrawPreviewComponent from './DefaultDrawPreviewComponent';
 

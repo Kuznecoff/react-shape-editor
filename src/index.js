@@ -1,6 +1,6 @@
 import ShapeEditor from './ShapeEditor';
 import wrapShape from './wrapShape';
-import ImageLayer from './ImageLayer';
+import ImageLayer from './ImageLayer.tsx';
 import DrawLayer from './DrawLayer';
 import SelectionLayer from './SelectionLayer';
 
