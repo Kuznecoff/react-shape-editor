@@ -130,7 +130,7 @@ class DrawLayer extends Component {
       : null;
 
     return (
-      <React.Fragment>
+      <>
         <rect
           className="rse-draw-layer"
           width={vectorWidth}
@@ -158,7 +158,7 @@ class DrawLayer extends Component {
             y={draggedRect.y}
           />
         )}
-      </React.Fragment>
+      </>
     );
   }
 }

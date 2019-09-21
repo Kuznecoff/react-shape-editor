@@ -14,7 +14,9 @@ function withContext(Component) {
     const scale = useContext(ScaleContext);
     return (
       <Component
+        // eslint-disable-next-line react/jsx-props-no-spreading
         {...props}
+        // eslint-disable-next-line react/jsx-props-no-spreading
         {...callbacks}
         callbacks={callbacks}
         vectorHeight={vectorHeight}

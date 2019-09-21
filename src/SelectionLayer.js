@@ -386,6 +386,7 @@ class SelectionLayer extends Component {
       extra = (
         <SelectionComponent
           keyboardTransformMultiplier={keyboardTransformMultiplier}
+          // eslint-disable-next-line react/jsx-props-no-spreading
           {...selectionComponentProps}
           shapeId={SELECTION_COMPONENT_SHAPE_ID}
           isInternalComponent
@@ -453,7 +454,7 @@ class SelectionLayer extends Component {
     }
 
     return (
-      <React.Fragment>
+      <>
         <rect
           className="rse-selection-layer"
           width={vectorWidth}
@@ -471,12 +472,12 @@ class SelectionLayer extends Component {
           }}
         />
         <CallbacksContext.Provider value={this.callbacks}>
-          <React.Fragment>
+          <>
             {children}
             {extra}
-          </React.Fragment>
+          </>
         </CallbacksContext.Provider>
-      </React.Fragment>
+      </>
     );
   }
 }

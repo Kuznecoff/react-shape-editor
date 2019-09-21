@@ -58,6 +58,7 @@ class ImageLayer extends Component {
         href={src}
         width={naturalWidth}
         height={naturalHeight}
+        // eslint-disable-next-line react/jsx-props-no-spreading
         {...otherProps}
       />
     );

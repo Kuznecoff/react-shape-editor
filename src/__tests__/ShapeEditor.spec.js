@@ -1,4 +1,5 @@
-/* eslint-disable react/prop-types */
+/* eslint-disable react/jsx-props-no-spreading, react/prop-types */
+
 import React from 'react';
 import { mount } from 'enzyme';
 import { withProfiler } from 'jest-react-profiler';

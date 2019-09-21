@@ -142,6 +142,7 @@ class ShapeEditor extends Component {
         }}
         // IE11 - prevent all elements from being focusable by default
         focusable={false}
+        // eslint-disable-next-line react/jsx-props-no-spreading
         {...otherProps}
       >
         <CallbacksContext.Provider value={this.callbacks}>

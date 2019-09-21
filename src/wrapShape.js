@@ -556,12 +556,14 @@ function wrapShape(WrappedComponent) {
               event.preventDefault();
             }
           }}
+          // eslint-disable-next-line react/jsx-props-no-spreading
           {...wrapperProps}
         >
           <WrappedComponent
             isBeingChanged={isMouseDown}
             active={active}
             nativeActive={nativeActive}
+            // eslint-disable-next-line react/jsx-props-no-spreading
             {...otherProps}
             width={width}
             height={height}
