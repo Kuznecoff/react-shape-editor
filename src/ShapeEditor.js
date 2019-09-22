@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 export const CallbacksContext = React.createContext({
   getPlaneCoordinatesFromEvent: () => {},
   onShapeMountedOrUnmounted: () => {},
-  setMouseHandler: () => {},
+  setMouseHandlerRef: () => {},
 });
 export const VectorHeightContext = React.createContext(0);
 export const VectorWidthContext = React.createContext(0);
@@ -22,12 +22,12 @@ class ShapeEditor extends Component {
     );
     this.onMouseEvent = this.onMouseEvent.bind(this);
     this.onShapeMountedOrUnmounted = this.onShapeMountedOrUnmounted.bind(this);
-    this.setMouseHandler = this.setMouseHandler.bind(this);
+    this.setMouseHandlerRef = this.setMouseHandlerRef.bind(this);
 
     this.callbacks = {
       onShapeMountedOrUnmounted: this.onShapeMountedOrUnmounted,
       getPlaneCoordinatesFromEvent: this.getPlaneCoordinatesFromEvent,
-      setMouseHandler: this.setMouseHandler,
+      setMouseHandlerRef: this.setMouseHandlerRef,
     };
   }
 
@@ -81,8 +81,11 @@ class ShapeEditor extends Component {
   }
 
   onMouseEvent(event) {
-    if (typeof this.mouseHandler === 'function') {
-      this.mouseHandler(event);
+    if (
+      this.mouseHandlerRef &&
+      typeof this.mouseHandlerRef.current === 'function'
+    ) {
+      this.mouseHandlerRef.current(event);
     }
   }
 
@@ -101,8 +104,8 @@ class ShapeEditor extends Component {
     }
   }
 
-  setMouseHandler(mouseHandler) {
-    this.mouseHandler = mouseHandler;
+  setMouseHandlerRef(mouseHandlerRef) {
+    this.mouseHandlerRef = mouseHandlerRef;
   }
 
   getPlaneCoordinatesFromEvent(event, { x: offsetX = 0, y: offsetY = 0 } = {}) {

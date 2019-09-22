@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
+import React, { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import {
   getRectFromCornerCoordinates,
   defaultConstrainMove,
   defaultConstrainResize,
 } from './utils.ts';
-import { deprecatedWrappingStyle as withContext } from './useRootContext.tsx';
+import useRootContext from './useRootContext.tsx';
 import DefaultDrawPreviewComponent from './DefaultDrawPreviewComponent';
 
 const defaultDragState = {
@@ -14,29 +14,25 @@ const defaultDragState = {
   isMouseDown: false,
 };
 
-class DrawLayer extends Component {
-  constructor(props) {
-    super(props);
+const DrawLayer = ({
+  DrawPreviewComponent = DefaultDrawPreviewComponent,
+  constrainResize = defaultConstrainResize,
+  constrainMove = defaultConstrainMove,
+  onAddShape,
+}) => {
+  const {
+    scale,
+    vectorHeight,
+    vectorWidth,
+    callbacks: { setMouseHandlerRef, getPlaneCoordinatesFromEvent },
+  } = useRootContext();
 
-    this.state = {
-      ...defaultDragState,
-    };
+  const [
+    { isMouseDown, dragStartCoordinates, dragCurrentCoordinates },
+    setDragState,
+  ] = useState(defaultDragState);
 
-    this.getCoordinatesFromEvent = this.getCoordinatesFromEvent.bind(this);
-    this.onMouseUp = this.onMouseUp.bind(this);
-    this.onMouseMove = this.onMouseMove.bind(this);
-    this.mouseHandler = this.mouseHandler.bind(this);
-  }
-
-  getCoordinatesFromEvent(event, isStartEvent = false) {
-    const {
-      constrainResize,
-      constrainMove,
-      getPlaneCoordinatesFromEvent,
-      vectorWidth,
-      vectorHeight,
-    } = this.props;
-    const { dragStartCoordinates, dragCurrentCoordinates } = this.state;
+  const getCoordinatesFromEvent = (event, isStartEvent = false) => {
     const { x: rawX, y: rawY } = getPlaneCoordinatesFromEvent(event);
 
     if (isStartEvent) {
@@ -64,19 +60,19 @@ class DrawLayer extends Component {
     });
 
     return { x, y };
-  }
+  };
 
-  onMouseUp() {
-    if (!this.state.isMouseDown) {
+  const onMouseUp = () => {
+    if (!isMouseDown) {
       return;
     }
 
-    const { dragStartCoordinates, dragCurrentCoordinates } = this.state;
+    const resetDragState = () => setDragState(defaultDragState);
     if (
       dragStartCoordinates.x === dragCurrentCoordinates.x ||
       dragStartCoordinates.y === dragCurrentCoordinates.y
     ) {
-      this.setState(defaultDragState);
+      resetDragState();
       return;
     }
 
@@ -85,83 +81,66 @@ class DrawLayer extends Component {
       dragCurrentCoordinates
     );
 
-    this.setState(defaultDragState, () => {
-      this.props.onAddShape(newRect);
-    });
-  }
+    resetDragState();
+    onAddShape(newRect);
+  };
 
-  onMouseMove(event) {
-    if (!this.state.isMouseDown) {
+  const onMouseMove = event => {
+    if (!isMouseDown) {
       return;
     }
 
-    this.setState({
-      dragCurrentCoordinates: this.getCoordinatesFromEvent(event),
-    });
-  }
+    setDragState(prevDragState => ({
+      ...prevDragState,
+      dragCurrentCoordinates: getCoordinatesFromEvent(event),
+    }));
+  };
 
-  mouseHandler(event) {
+  const mouseHandlerRef = useRef();
+  mouseHandlerRef.current = event => {
     if (event.type === 'mousemove') {
-      this.onMouseMove(event);
+      onMouseMove(event);
     } else if (event.type === 'mouseup') {
-      this.onMouseUp(event);
+      onMouseUp(event);
     }
-  }
+  };
 
-  render() {
-    const {
-      DrawPreviewComponent,
-      scale,
-      setMouseHandler,
-      vectorHeight,
-      vectorWidth,
-    } = this.props;
-    const {
-      dragCurrentCoordinates,
-      dragStartCoordinates,
-      isMouseDown,
-    } = this.state;
+  const draggedRect = isMouseDown
+    ? getRectFromCornerCoordinates(dragStartCoordinates, dragCurrentCoordinates)
+    : null;
 
-    const draggedRect = isMouseDown
-      ? getRectFromCornerCoordinates(
-          dragStartCoordinates,
-          dragCurrentCoordinates
-        )
-      : null;
-
-    return (
-      <>
-        <rect
-          className="rse-draw-layer"
-          width={vectorWidth}
-          height={vectorHeight}
-          fill="transparent"
-          onMouseDown={event => {
-            const startCoordinates = this.getCoordinatesFromEvent(event, true);
-            setMouseHandler(this.mouseHandler);
-            this.setState({
-              dragStartCoordinates: startCoordinates,
-              dragCurrentCoordinates: startCoordinates,
-              isMouseDown: true,
-            });
-          }}
+  return (
+    <>
+      <rect
+        className="rse-draw-layer"
+        width={vectorWidth}
+        height={vectorHeight}
+        fill="transparent"
+        onMouseDown={event => {
+          const startCoordinates = getCoordinatesFromEvent(event, true);
+          setMouseHandlerRef(mouseHandlerRef);
+          setDragState({
+            dragStartCoordinates: startCoordinates,
+            dragCurrentCoordinates: startCoordinates,
+            isMouseDown: true,
+          });
+        }}
+      />
+      {isMouseDown && (
+        <DrawPreviewComponent
+          height={draggedRect.height}
+          disabled
+          isInternalComponent
+          scale={scale}
+          shapeId="rse-internal-draw-component"
+          width={draggedRect.width}
+          x={draggedRect.x}
+          y={draggedRect.y}
         />
-        {isMouseDown && (
-          <DrawPreviewComponent
-            height={draggedRect.height}
-            disabled
-            isInternalComponent
-            scale={scale}
-            shapeId="rse-internal-draw-component"
-            width={draggedRect.width}
-            x={draggedRect.x}
-            y={draggedRect.y}
-          />
-        )}
-      </>
-    );
-  }
-}
+      )}
+    </>
+  );
+};
 
 DrawLayer.propTypes = {
   constrainMove: PropTypes.func,
@@ -170,12 +149,7 @@ DrawLayer.propTypes = {
     PropTypes.func,
     PropTypes.shape({}),
   ]),
-  getPlaneCoordinatesFromEvent: PropTypes.func.isRequired,
   onAddShape: PropTypes.func.isRequired,
-  scale: PropTypes.number.isRequired,
-  setMouseHandler: PropTypes.func.isRequired,
-  vectorHeight: PropTypes.number.isRequired,
-  vectorWidth: PropTypes.number.isRequired,
 };
 
 DrawLayer.defaultProps = {
@@ -184,4 +158,4 @@ DrawLayer.defaultProps = {
   DrawPreviewComponent: DefaultDrawPreviewComponent,
 };
 
-export default withContext(DrawLayer);
+export default DrawLayer;

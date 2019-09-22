@@ -344,7 +344,7 @@ class SelectionLayer extends Component {
       SelectionComponent,
       selectionComponentProps,
       SelectionDrawComponent,
-      setMouseHandler,
+      setMouseHandlerRef,
       vectorHeight,
       vectorWidth,
     } = this.props;
@@ -462,7 +462,7 @@ class SelectionLayer extends Component {
           fill="transparent"
           onMouseDown={event => {
             const startCoordinates = getPlaneCoordinatesFromEvent(event);
-            setMouseHandler(this.mouseHandler);
+            setMouseHandlerRef({ current: this.mouseHandler });
             this.setState({
               dragStartCoordinates: startCoordinates,
               dragCurrentCoordinates: startCoordinates,
@@ -503,7 +503,7 @@ SelectionLayer.propTypes = {
     PropTypes.func,
     PropTypes.shape({}),
   ]),
-  setMouseHandler: PropTypes.func.isRequired,
+  setMouseHandlerRef: PropTypes.func.isRequired,
   vectorHeight: PropTypes.number.isRequired,
   vectorWidth: PropTypes.number.isRequired,
 };

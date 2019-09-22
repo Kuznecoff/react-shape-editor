@@ -327,7 +327,7 @@ function wrapShape(WrappedComponent) {
         onKeyDown,
         onShapeMountedOrUnmounted,
         ResizeHandleComponent,
-        setMouseHandler,
+        setMouseHandlerRef,
         wrapperProps,
         ...otherProps
       } = this.props;
@@ -428,7 +428,7 @@ function wrapShape(WrappedComponent) {
                   y: planeY - movingPoint.y,
                 };
 
-                setMouseHandler(this.mouseHandler);
+                setMouseHandlerRef({ current: this.mouseHandler });
                 this.setState({
                   isMouseDown: true,
                   dragStartCoordinates: anchorPoint,
@@ -505,7 +505,7 @@ function wrapShape(WrappedComponent) {
               y: planeY - y,
             };
 
-            setMouseHandler(this.mouseHandler);
+            setMouseHandlerRef({ current: this.mouseHandler });
             this.setState({
               isMouseDown: true,
               dragCurrentCoordinates: { x, y },
@@ -597,7 +597,7 @@ function wrapShape(WrappedComponent) {
     ResizeHandleComponent: PropTypes.func,
     scale: PropTypes.number.isRequired,
     shapeId: PropTypes.string.isRequired,
-    setMouseHandler: PropTypes.func.isRequired,
+    setMouseHandlerRef: PropTypes.func.isRequired,
     width: PropTypes.number.isRequired,
     wrapperProps: PropTypes.shape({}),
     x: PropTypes.number.isRequired,
