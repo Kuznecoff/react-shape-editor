@@ -33,3 +33,7 @@ export interface ConstrainResizeFuncArgs {
 export interface ConstrainResizeFunc {
   (args: ConstrainResizeFuncArgs): Point;
 }
+
+export interface MouseHandlerFunc {
+  (event: Event): void;
+}

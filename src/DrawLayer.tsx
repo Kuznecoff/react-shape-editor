@@ -4,17 +4,48 @@ import {
   getRectFromCornerCoordinates,
   defaultConstrainMove,
   defaultConstrainResize,
-} from './utils.ts';
-import useRootContext from './useRootContext.tsx';
+} from './utils';
+import useRootContext from './useRootContext';
 import DefaultDrawPreviewComponent from './DefaultDrawPreviewComponent';
+import {
+  MouseHandlerFunc,
+  Point,
+  ConstrainMoveFunc,
+  ConstrainResizeFunc,
+  Rectangle,
+} from './types';
 
-const defaultDragState = {
-  dragStartCoordinates: null,
-  dragCurrentCoordinates: null,
+interface DragState {
+  dragStartCoordinates: Point;
+  dragCurrentCoordinates: Point;
+  isMouseDown: boolean;
+}
+
+const defaultPoint = { x: 0, y: 0 };
+const defaultDragState: DragState = {
+  dragStartCoordinates: defaultPoint,
+  dragCurrentCoordinates: defaultPoint,
   isMouseDown: false,
 };
 
-const DrawLayer = ({
+interface Props {
+  constrainMove?: ConstrainMoveFunc;
+  constrainResize?: ConstrainResizeFunc;
+  DrawPreviewComponent?: any;
+  onAddShape: (newRect: Rectangle) => void;
+}
+
+const propTypes = {
+  constrainMove: PropTypes.func,
+  constrainResize: PropTypes.func,
+  DrawPreviewComponent: PropTypes.oneOfType([
+    PropTypes.func,
+    PropTypes.shape({}),
+  ]),
+  onAddShape: PropTypes.func.isRequired,
+};
+
+const DrawLayer: React.FunctionComponent<Props> = ({
   DrawPreviewComponent = DefaultDrawPreviewComponent,
   constrainResize = defaultConstrainResize,
   constrainMove = defaultConstrainMove,
@@ -96,12 +127,14 @@ const DrawLayer = ({
     }));
   };
 
-  const mouseHandlerRef = useRef();
+  const mouseHandlerRef: React.MutableRefObject<MouseHandlerFunc> = useRef(
+    () => {}
+  );
   mouseHandlerRef.current = event => {
     if (event.type === 'mousemove') {
       onMouseMove(event);
     } else if (event.type === 'mouseup') {
-      onMouseUp(event);
+      onMouseUp();
     }
   };
 
@@ -126,7 +159,7 @@ const DrawLayer = ({
           });
         }}
       />
-      {isMouseDown && (
+      {draggedRect && (
         <DrawPreviewComponent
           height={draggedRect.height}
           disabled
@@ -142,20 +175,6 @@ const DrawLayer = ({
   );
 };
 
-DrawLayer.propTypes = {
-  constrainMove: PropTypes.func,
-  constrainResize: PropTypes.func,
-  DrawPreviewComponent: PropTypes.oneOfType([
-    PropTypes.func,
-    PropTypes.shape({}),
-  ]),
-  onAddShape: PropTypes.func.isRequired,
-};
-
-DrawLayer.defaultProps = {
-  constrainMove: defaultConstrainMove,
-  constrainResize: defaultConstrainResize,
-  DrawPreviewComponent: DefaultDrawPreviewComponent,
-};
+DrawLayer.propTypes = propTypes;
 
 export default DrawLayer;

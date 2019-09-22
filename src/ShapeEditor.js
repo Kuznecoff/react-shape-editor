@@ -1,14 +1,11 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-
-export const CallbacksContext = React.createContext({
-  getPlaneCoordinatesFromEvent: () => {},
-  onShapeMountedOrUnmounted: () => {},
-  setMouseHandlerRef: () => {},
-});
-export const VectorHeightContext = React.createContext(0);
-export const VectorWidthContext = React.createContext(0);
-export const ScaleContext = React.createContext(1);
+import {
+  CallbacksContext,
+  VectorHeightContext,
+  VectorWidthContext,
+  ScaleContext,
+} from './useRootContext.tsx';
 
 class ShapeEditor extends Component {
   constructor(props) {

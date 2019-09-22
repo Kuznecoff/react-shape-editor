@@ -1,10 +1,21 @@
 import React, { useContext } from 'react';
-import {
-  CallbacksContext,
-  VectorHeightContext,
-  VectorWidthContext,
-  ScaleContext,
-} from './ShapeEditor';
+import { Point, MouseHandlerFunc } from './types';
+
+interface CallbackContextProps {
+  getPlaneCoordinatesFromEvent: (event: MouseEvent) => Point;
+  onShapeMountedOrUnmounted: (
+    instance: React.ComponentType,
+    didMount: boolean
+  ) => void;
+  setMouseHandlerRef: (
+    mouseHandlerRef: React.MutableRefObject<MouseHandlerFunc>
+  ) => void;
+}
+
+export const CallbacksContext = React.createContext({} as CallbackContextProps);
+export const VectorHeightContext = React.createContext(0);
+export const VectorWidthContext = React.createContext(0);
+export const ScaleContext = React.createContext(1);
 
 const useRootContext = () => ({
   callbacks: useContext(CallbacksContext),
