@@ -1,38 +1,9 @@
-interface Point {
-  readonly x: number;
-  readonly y: number;
-}
-
-interface Rectangle extends Point {
-  readonly width: number;
-  readonly height: number;
-}
-
-interface ConstrainMoveFuncArgs {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-  readonly originalX: number;
-  readonly originalY: number;
-  readonly vectorWidth: number;
-  readonly vectorHeight: number;
-}
-interface ConstrainMoveFunc {
-  (args: ConstrainMoveFuncArgs): Point;
-}
-
-interface ConstrainResizeFuncArgs {
-  readonly originalMovingCorner: Point;
-  readonly startCorner: Point;
-  readonly movingCorner: Point;
-  readonly lockedDimension: 'x' | 'y' | null;
-  readonly vectorWidth: number;
-  readonly vectorHeight: number;
-}
-interface ConstrainResizeFunc {
-  (args: ConstrainResizeFuncArgs): Point;
-}
+import {
+  ConstrainMoveFunc,
+  ConstrainResizeFunc,
+  Point,
+  Rectangle,
+} from './types';
 
 export function getRectFromCornerCoordinates(
   corner1: Point,

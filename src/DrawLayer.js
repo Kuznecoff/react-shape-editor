@@ -5,7 +5,7 @@ import {
   defaultConstrainMove,
   defaultConstrainResize,
 } from './utils.ts';
-import withContext from './withContext';
+import { deprecatedWrappingStyle as withContext } from './useRootContext.tsx';
 import DefaultDrawPreviewComponent from './DefaultDrawPreviewComponent';
 
 const defaultDragState = {

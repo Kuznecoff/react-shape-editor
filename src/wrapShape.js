@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import DefaultResizeHandleComponent from './DefaultResizeHandleComponent';
-import withContext from './withContext';
+import { deprecatedWrappingStyle as withContext } from './useRootContext.tsx';
 import {
   getRectFromCornerCoordinates,
   defaultConstrainMove,
