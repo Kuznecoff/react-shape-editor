@@ -106,7 +106,7 @@ class App extends Component {
     const shapeChoices = [RectShape, OvalShape, StarShape];
 
     const shapes = items.map((item, index) => {
-      const { id, width, height, x, y, ...otherProps } = item;
+      const { id, width, height, x, y } = item;
       const Shape = shapeChoices[index % shapeChoices.length];
       return (
         <Shape
@@ -120,6 +120,7 @@ class App extends Component {
           shapeId={id}
           shapeIndex={index}
           width={width}
+          // eslint-disable-next-line react/jsx-props-no-spreading
           {...(backgroundMode === 'select'
             ? {
                 active: !!selectedIdDict[id],
@@ -129,7 +130,6 @@ class App extends Component {
             : {})}
           x={x}
           y={y}
-          {...otherProps}
         />
       );
     });

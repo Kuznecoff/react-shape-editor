@@ -10,7 +10,7 @@
     "clean": "rimraf dist/*",
     "clean:storybook": "rimraf build/storybook",
     "clean:website": "rimraf build",
-    "lint": "eslint src",
+    "lint": "eslint src website",
     "prettier": "prettier --write \"{src,example/src,stories}/**/*.{js,css,md}\"",
     "prepublishOnly": "npm run lint && npm run test:once && npm run clean && npm run build",
     "test": "jest --watch",
