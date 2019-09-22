@@ -1,4 +1,4 @@
-import React, { useState, FunctionComponent, useEffect } from 'react';
+import React, { useState, FunctionComponent, useEffect, useRef } from 'react';
 import PropTypes, { string } from 'prop-types';
 
 interface ImageDimensions {
@@ -28,6 +28,9 @@ const useImageLoader = (
     naturalWidth: 0,
   });
 
+  // Use a ref so it only re-runs the image load effect when the source changes
+  const onLoadRef = useRef(onLoad);
+
   useEffect(() => {
     let didCancel = false;
     // Load the background image in memory to measure its dimensions
@@ -42,7 +45,7 @@ const useImageLoader = (
         naturalWidth: memoryImage.naturalWidth,
         naturalHeight: memoryImage.naturalHeight,
       });
-      onLoad({
+      onLoadRef.current({
         naturalWidth: memoryImage.naturalWidth,
         naturalHeight: memoryImage.naturalHeight,
       });
@@ -52,7 +55,7 @@ const useImageLoader = (
     return () => {
       didCancel = true;
     };
-  }, [imageSrc, onLoad]);
+  }, [imageSrc, onLoadRef]);
 
   return { naturalHeight, naturalWidth };
 };
