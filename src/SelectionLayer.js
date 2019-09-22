@@ -1,8 +1,10 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { getRectFromCornerCoordinates } from './utils.ts';
-import { CallbacksContext } from './ShapeEditor';
-import { deprecatedWrappingStyle as withContext } from './useRootContext.tsx';
+import {
+  deprecatedWrappingStyle as withContext,
+  CallbacksContext,
+} from './useRootContext.tsx';
 import DefaultSelectionDrawComponent from './DefaultSelectionDrawComponent';
 import DefaultSelectionComponent from './DefaultSelectionComponent';
 
