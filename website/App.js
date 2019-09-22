@@ -5,9 +5,9 @@ import OvalShape from './OvalShape';
 import StarShape from './StarShape';
 import bgImage from './blank.png';
 
-// if (process.env.NODE_ENV !== 'production') {
-//   const { whyDidYouUpdate } = require('why-did-you-update');
-//   whyDidYouUpdate(React, {
+// if (process.env.NODE_ENV === 'development') {
+//   const whyDidYouRender = require('@welldone-software/why-did-you-render');
+//   whyDidYouRender(React, {
 //     // include: [/^wrapShape\(/],
 //   });
 // }
