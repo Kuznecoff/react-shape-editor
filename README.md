@@ -1,7 +1,6 @@
 # React Shape Editor [![npm version](https://badge.fury.io/js/react-shape-editor.svg)](https://www.npmjs.com/package/react-shape-editor) [![CircleCI](https://circleci.com/gh/fritz-c/react-shape-editor.svg?style=svg)](https://circleci.com/gh/fritz-c/react-shape-editor)
 
-Simple shape editor component
-
+Basic yet flexible shape editor component
 
 [![shape-editor](https://user-images.githubusercontent.com/4413963/59026651-eb403580-8891-11e9-9fea-33843b6386c0.gif)](https://fritz-c.github.io/react-shape-editor/)
 
@@ -9,6 +8,10 @@ Simple shape editor component
 
 - [Bounding Box Labeler](https://fritz-c.github.io/bounding-box-labeler/) by [@fritz-c](https://github.com/fritz-c) ([source](https://github.com/fritz-c/bounding-box-labeler))
 - *(Submit a PR to add yours here!)*
+
+**Note to prospective users and contributors**: This component is maintained as I see fit, which means _not maintained_ in most cases. My stance is that your fork is as good a base to create a great npm package as mine is (you can even namespace it like `@your-npm-id/react-shape-editor` if you want to leave a trail back to this project). Such is the freedom of open source.
+
+Please, before making a well-intentioned PR, create an issue to discuss the functionality/fixes you intend to add, and let's go from there. I will most likely not be adding more functionality, but I'm always interested in hearing ideas for improvements.
 
 ## Installation
 ```sh
