@@ -5,9 +5,10 @@ Simple shape editor component
 
 [![shape-editor](https://user-images.githubusercontent.com/4413963/59026651-eb403580-8891-11e9-9fea-33843b6386c0.gif)](https://fritz-c.github.io/react-shape-editor/)
 
-**Other components built with react-shape-editor:**
+**Other projects using react-shape-editor:**
 
-- Bounding Box Labeler ([demo](https://fritz-c.github.io/bounding-box-labeler/)) ([source](https://github.com/fritz-c/bounding-box-labeler))
+- Bounding Box Labeler - @fritz-c ([demo](https://fritz-c.github.io/bounding-box-labeler/)) ([source](https://github.com/fritz-c/bounding-box-labeler))
+- *(Submit a PR to add yours here!)*
 
 ## Installation
 ```sh
