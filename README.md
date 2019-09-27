@@ -7,7 +7,7 @@ Simple shape editor component
 
 **Other projects using react-shape-editor:**
 
-- [Bounding Box Labeler](https://fritz-c.github.io/bounding-box-labeler/) - [@fritz-c](https://github.com/fritz-c) ([source](https://github.com/fritz-c/bounding-box-labeler))
+- [Bounding Box Labeler](https://fritz-c.github.io/bounding-box-labeler/) by [@fritz-c](https://github.com/fritz-c) ([source](https://github.com/fritz-c/bounding-box-labeler))
 - *(Submit a PR to add yours here!)*
 
 ## Installation
