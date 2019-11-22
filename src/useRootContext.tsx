@@ -16,6 +16,13 @@ interface CallbackContextProps {
   setMouseHandlerRef: (
     mouseHandlerRef: React.MutableRefObject<MouseHandlerFunc>
   ) => void;
+  onChildRectChanged: (shapeId: boolean, isInternalComponent: boolean) => void;
+  onChildFocus: (shapeId: boolean, isInternalComponent: boolean) => void;
+  onChildToggleSelection: (
+    shapeId: boolean,
+    isInternalComponent: boolean,
+    event: MouseEvent
+  ) => void;
 }
 
 export const CallbacksContext = React.createContext({} as CallbackContextProps);

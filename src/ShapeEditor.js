@@ -25,6 +25,9 @@ class ShapeEditor extends Component {
       onShapeMountedOrUnmounted: this.onShapeMountedOrUnmounted,
       getPlaneCoordinatesFromEvent: this.getPlaneCoordinatesFromEvent,
       setMouseHandlerRef: this.setMouseHandlerRef,
+      onChildRectChanged: () => {},
+      onChildFocus: () => {},
+      onChildToggleSelection: () => {},
     };
   }
 
