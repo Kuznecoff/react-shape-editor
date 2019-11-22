@@ -44,6 +44,8 @@
     "moduleFileExtensions": [
       "js",
       "jsx",
+      "ts",
+      "tsx",
       "json"
     ],
     "moduleDirectories": [
