@@ -11,8 +11,8 @@ class ShapeEditor extends Component {
   constructor(props) {
     super(props);
 
-    this.wrappedShapes = [];
-    this.justAddedShapes = [];
+    this.wrappedShapeActionRefs = [];
+    this.justAddedShapeActionRefs = [];
 
     this.getPlaneCoordinatesFromEvent = this.getPlaneCoordinatesFromEvent.bind(
       this
@@ -34,9 +34,9 @@ class ShapeEditor extends Component {
   }
 
   componentDidUpdate() {
-    if (this.justAddedShapes.length > 0 && this.props.focusOnAdd) {
+    if (this.justAddedShapeActionRefs.length > 0 && this.props.focusOnAdd) {
       // Focus on shapes added since the last update
-      this.justAddedShapes.slice(-1)[0].forceFocus();
+      this.justAddedShapeActionRefs.slice(-1)[0].current.forceFocus();
     } else if (this.lastDeletedRect && this.props.focusOnDelete) {
       // If something was deleted since the last update, focus on the
       // next closest shape by center coordinates
@@ -47,24 +47,24 @@ class ShapeEditor extends Component {
       const deletedShapeCenter = getShapeCenter(this.lastDeletedRect);
 
       let closestDistance = Math.MAX_SAFE_INTEGER || 2 ** 53 - 1;
-      let closestShape = null;
-      this.wrappedShapes.forEach(shape => {
-        const shapeCenter = getShapeCenter(shape.props);
+      let closestShapeActions = null;
+      this.wrappedShapeActionRefs.forEach(shapeActionRef => {
+        const shapeCenter = getShapeCenter(shapeActionRef.current.props);
         const distance =
           (deletedShapeCenter.x - shapeCenter.x) ** 2 +
           (deletedShapeCenter.y - shapeCenter.y) ** 2;
         if (distance < closestDistance) {
           closestDistance = distance;
-          closestShape = shape;
+          closestShapeActions = shapeActionRef.current;
         }
       });
 
-      if (closestShape) {
-        closestShape.forceFocus();
+      if (closestShapeActions) {
+        closestShapeActions.forceFocus();
       }
     }
 
-    this.justAddedShapes = [];
+    this.justAddedShapeActionRefs = [];
     this.lastDeletedRect = null;
   }
 
@@ -72,8 +72,8 @@ class ShapeEditor extends Component {
     window.removeEventListener('mouseup', this.onMouseEvent);
     window.removeEventListener('mousemove', this.onMouseEvent);
 
-    this.justAddedShapes = [];
-    this.wrappedShapes = [];
+    this.justAddedShapeActionRefs = [];
+    this.wrappedShapeActionRefs = [];
     this.unmounted = true;
   }
 
@@ -86,18 +86,26 @@ class ShapeEditor extends Component {
     }
   }
 
-  onShapeMountedOrUnmounted(instance, didMount) {
+  onShapeMountedOrUnmounted(shapeActionsRef, didMount) {
     if (didMount) {
-      this.justAddedShapes = [...this.justAddedShapes, instance];
-      this.wrappedShapes = [...this.wrappedShapes, instance];
+      this.justAddedShapeActionRefs = [
+        ...this.justAddedShapeActionRefs,
+        shapeActionsRef,
+      ];
+      this.wrappedShapeActionRefs = [
+        ...this.wrappedShapeActionRefs,
+        shapeActionsRef,
+      ];
     } else {
       this.lastDeletedRect = {
-        x: instance.props.x,
-        y: instance.props.y,
-        width: instance.props.width,
-        height: instance.props.height,
+        x: shapeActionsRef.current.props.x,
+        y: shapeActionsRef.current.props.y,
+        width: shapeActionsRef.current.props.width,
+        height: shapeActionsRef.current.props.height,
       };
-      this.wrappedShapes = this.wrappedShapes.filter(s => s !== instance);
+      this.wrappedShapeActionRefs = this.wrappedShapeActionRefs.filter(
+        s => s !== shapeActionsRef
+      );
     }
   }
 

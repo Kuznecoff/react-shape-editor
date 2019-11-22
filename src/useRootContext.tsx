@@ -1,10 +1,16 @@
 import React, { useContext } from 'react';
-import { Point, MouseHandlerFunc } from './types';
+import { Point, MouseHandlerFunc, Rectangle } from './types';
+
+interface ShapeActions {
+  props: object;
+  forceFocus: () => void;
+  simulateTransform: (nextRect: Rectangle) => void;
+}
 
 interface CallbackContextProps {
   getPlaneCoordinatesFromEvent: (event: MouseEvent) => Point;
   onShapeMountedOrUnmounted: (
-    instance: React.ComponentType,
+    shapeActionRef: React.MutableRefObject<MouseHandlerFunc>,
     didMount: boolean
   ) => void;
   setMouseHandlerRef: (

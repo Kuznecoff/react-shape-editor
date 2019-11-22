@@ -102,7 +102,7 @@ class SelectionLayer extends Component {
       ...defaultDragState,
     };
 
-    this.wrappedShapes = {};
+    this.wrappedShapeActionRefs = {};
 
     this.onMouseUp = this.onMouseUp.bind(this);
     this.onMouseMove = this.onMouseMove.bind(this);
@@ -124,7 +124,7 @@ class SelectionLayer extends Component {
   }
 
   componentWillUnmount() {
-    this.wrappedShapes = {};
+    this.wrappedShapeActionRefs = {};
   }
 
   componentDidUpdate() {
@@ -135,7 +135,7 @@ class SelectionLayer extends Component {
       // Otherwise, no change
       if (
         this.props.selectedShapeIds.filter(
-          shapeId => this.wrappedShapes[shapeId]
+          shapeId => this.wrappedShapeActionRefs[shapeId]
         ).length >= 2
       ) {
         this.forceUpdate();
@@ -259,16 +259,20 @@ class SelectionLayer extends Component {
       dragStartCoordinates,
       dragCurrentCoordinates
     );
-    const selectedShapeIds = Object.keys(this.wrappedShapes).filter(shapeId => {
-      const { x, y, width, height } = this.wrappedShapes[shapeId].props;
+    const selectedShapeIds = Object.keys(this.wrappedShapeActionRefs).filter(
+      shapeId => {
+        const { x, y, width, height } = this.wrappedShapeActionRefs[
+          shapeId
+        ].current.props;
 
-      return (
-        x + width > selectRect.x &&
-        x < selectRect.x + selectRect.width &&
-        y + height > selectRect.y &&
-        y < selectRect.y + selectRect.height
-      );
-    });
+        return (
+          x + width > selectRect.x &&
+          x < selectRect.x + selectRect.width &&
+          y + height > selectRect.y &&
+          y < selectRect.y + selectRect.height
+        );
+      }
+    );
 
     this.setState(defaultDragState);
     this.props.onSelectionChange(selectedShapeIds);
@@ -277,7 +281,7 @@ class SelectionLayer extends Component {
       this.selectionEl.forceFocus();
     } else if (selectedShapeIds.length === 1) {
       // In the event that a single shape is selected, give native focus to it as well
-      this.wrappedShapes[selectedShapeIds[0]].forceFocus();
+      this.wrappedShapeActionRefs[selectedShapeIds[0]].current.forceFocus();
     }
   }
 
@@ -291,23 +295,23 @@ class SelectionLayer extends Component {
     });
   }
 
-  onSelectionShapeMountedOrUnmounted(instance, didMount) {
+  onSelectionShapeMountedOrUnmounted(shapeActionsRef, didMount) {
     const { onShapeMountedOrUnmounted, selectedShapeIds } = this.props;
 
     // Call the original callback
-    onShapeMountedOrUnmounted(instance, didMount);
-
+    onShapeMountedOrUnmounted(shapeActionsRef, didMount);
+    const { shapeId } = shapeActionsRef.current.props;
     if (
       !this.selectedChildrenDidChange &&
-      selectedShapeIds.indexOf(instance.props.shapeId) >= 0
+      selectedShapeIds.indexOf(shapeId) >= 0
     ) {
       this.selectedChildrenDidChange = true;
     }
 
     if (didMount) {
-      this.wrappedShapes[instance.props.shapeId] = instance;
+      this.wrappedShapeActionRefs[shapeId] = shapeActionsRef;
     } else {
-      delete this.wrappedShapes[instance.props.shapeId];
+      delete this.wrappedShapeActionRefs[shapeId];
     }
   }
 
@@ -363,8 +367,8 @@ class SelectionLayer extends Component {
         )
       : null;
 
-    const selectedShapes = selectedShapeIds
-      .map(shapeId => this.wrappedShapes[shapeId])
+    const selectedShapeActionRefs = selectedShapeIds
+      .map(shapeId => this.wrappedShapeActionRefs[shapeId])
       .filter(Boolean);
 
     let extra = null;
@@ -383,8 +387,10 @@ class SelectionLayer extends Component {
           />
         );
       }
-    } else if (selectedShapes.length >= 2) {
-      const selectionRect = getSelectionRect(selectedShapes.map(s => s.props));
+    } else if (selectedShapeActionRefs.length >= 2) {
+      const selectionRect = getSelectionRect(
+        selectedShapeActionRefs.map(s => s.current.props)
+      );
       extra = (
         <SelectionComponent
           keyboardTransformMultiplier={keyboardTransformMultiplier}
@@ -396,7 +402,7 @@ class SelectionLayer extends Component {
             this.selectionEl = el;
           }}
           onIntermediateChange={intermediateRect => {
-            selectedShapes.forEach(shape => {
+            selectedShapeActionRefs.forEach(shapeActionRef => {
               const {
                 constrainMove,
                 constrainResize,
@@ -404,7 +410,7 @@ class SelectionLayer extends Component {
                 y,
                 width,
                 height,
-              } = shape.props;
+              } = shapeActionRef.current.props;
 
               const tempRect = getNextRectOfSelectionChildConstrained(
                 selectionRect,
@@ -413,14 +419,19 @@ class SelectionLayer extends Component {
                 constrainMove,
                 constrainResize
               );
-              shape.simulateTransform(tempRect);
+              shapeActionRef.current.simulateTransform(tempRect);
             });
           }}
           onDelete={event => {
-            onDelete(event, selectedShapes.map(shape => shape.props));
+            onDelete(
+              event,
+              selectedShapeActionRefs.map(
+                shapeActionRef => shapeActionRef.current.props
+              )
+            );
           }}
           onChange={nextSelectionRect => {
-            const nextRects = selectedShapes.map(shape => {
+            const nextRects = selectedShapeActionRefs.map(shapeActionRef => {
               const {
                 constrainMove,
                 constrainResize,
@@ -428,7 +439,7 @@ class SelectionLayer extends Component {
                 y,
                 width,
                 height,
-              } = shape.props;
+              } = shapeActionRef.current.props;
 
               return getNextRectOfSelectionChildConstrained(
                 selectionRect,
@@ -440,11 +451,14 @@ class SelectionLayer extends Component {
             });
 
             // Restore the shapes back to their original positions
-            selectedShapes.forEach(shape => {
-              shape.simulateTransform(null);
+            selectedShapeActionRefs.forEach(s => {
+              s.current.simulateTransform(null);
             });
 
-            onChange(nextRects, selectedShapes.map(shape => shape.props));
+            onChange(
+              nextRects,
+              selectedShapeActionRefs.map(s => s.current.props)
+            );
           }}
           scale={scale}
           height={selectionRect.height}
