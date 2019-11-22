@@ -31,6 +31,7 @@ class App extends Component {
       scale: 0.75,
       items: [...new Array(100)].map((_, index) => ({
         id: String(index),
+        shapeTypeIndex: index,
         x: Math.random() * 1500,
         y: Math.random() * 1500,
         width: 150,
@@ -106,8 +107,9 @@ class App extends Component {
     const shapeChoices = [RectShape, OvalShape, StarShape];
 
     const shapes = items.map((item, index) => {
-      const { id, width, height, x, y } = item;
-      const Shape = shapeChoices[index % shapeChoices.length];
+      const { id, shapeTypeIndex, width, height, x, y } = item;
+      const Shape = shapeChoices[shapeTypeIndex % shapeChoices.length];
+
       return (
         <Shape
           key={id}
@@ -229,7 +231,14 @@ class App extends Component {
                   this.setState(state => ({
                     items: [
                       ...state.items,
-                      { id: `id${iterator}`, x, y, width, height },
+                      {
+                        id: `id${iterator}`,
+                        shapeTypeIndex: iterator,
+                        x,
+                        y,
+                        width,
+                        height,
+                      },
                     ],
                   }));
                   iterator += 1;
