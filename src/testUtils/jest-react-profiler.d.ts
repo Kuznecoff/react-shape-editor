@@ -1,5 +1,5 @@
 declare module 'jest-react-profiler' {
-  export function withProfiler(component: React.Component): React.Component;
+  export function withProfiler<T>(component: T): T;
 }
 
 declare namespace jest {
