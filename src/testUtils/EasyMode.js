@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { ShapeEditor, ImageLayer, DrawLayer, wrapShape } from '../index';
+import {
+  ShapeEditor,
+  ImageLayer,
+  DrawLayer,
+  wrapShape,
+  SelectionLayer,
+} from '../index';
 
 function arrayReplace(arr, index, item) {
   return [
@@ -45,17 +51,68 @@ const ResizeHandleComponent = ({
     onMouseDown={onMouseDown}
   />
 );
+
+const SelectionComponent = wrapShape(({ height, scale, width }) => (
+  <rect
+    fill="transparent"
+    stroke="rgba(140,179,255,1)"
+    strokeWidth={2 / scale}
+    height={height}
+    width={width}
+    data-testid="selection-rect"
+  />
+));
+
 /* eslint-enable react/prop-types */
 
 let idIterator = 1;
-const EasyMode = ({ initialItems, includeImageLayer, includeDrawLayer }) => {
+const EasyMode = ({
+  includeDrawLayer,
+  includeImageLayer,
+  includeSelectionLayer,
+  initialItemCount,
+}) => {
   const [items, setItems] = useState(
-    initialItems || [{ id: '1', x: 20, y: 50, width: 50, height: 25 }]
+    [...new Array(initialItemCount)].map((_, index) => ({
+      id: String(index),
+      x: 20 * (index + 1),
+      y: 50 * (index + 1),
+      width: 50,
+      height: 25,
+    }))
   );
+
+  const [selectedShapeIds, setSelectedShapeIds] = useState([]);
 
   const [{ vectorHeight, vectorWidth }, setVectorDimensions] = useState({
     vectorHeight: 0,
     vectorWidth: 0,
+  });
+
+  const shapes = items.map((item, index) => {
+    const { id, height, width, x, y } = item;
+    return (
+      <RectShape
+        key={id}
+        shapeId={id}
+        height={height}
+        width={width}
+        x={x}
+        y={y}
+        onChange={newRect => {
+          setItems(currentItems =>
+            arrayReplace(currentItems, index, {
+              ...item,
+              ...newRect,
+            })
+          );
+        }}
+        onDelete={() => {
+          setItems(currentItems => arrayReplace(currentItems, index, []));
+        }}
+        ResizeHandleComponent={ResizeHandleComponent}
+      />
+    );
   });
 
   return (
@@ -72,6 +129,7 @@ const EasyMode = ({ initialItems, includeImageLayer, includeDrawLayer }) => {
             }}
           />
         )}
+
         {includeDrawLayer && (
           <DrawLayer
             onAddShape={({ x, y, width, height }) => {
@@ -83,31 +141,47 @@ const EasyMode = ({ initialItems, includeImageLayer, includeDrawLayer }) => {
             }}
           />
         )}
-        {items.map((item, index) => {
-          const { id, height, width, x, y } = item;
-          return (
-            <RectShape
-              key={id}
-              shapeId={id}
-              height={height}
-              width={width}
-              x={x}
-              y={y}
-              onChange={newRect => {
-                setItems(currentItems =>
-                  arrayReplace(currentItems, index, {
+
+        {includeSelectionLayer ? (
+          <SelectionLayer
+            selectedShapeIds={selectedShapeIds}
+            onSelectionChange={ids => {
+              setSelectedShapeIds(ids);
+            }}
+            keyboardTransformMultiplier={5}
+            onChange={(newRects, selectedShapesProps) => {
+              setItems(currentItems =>
+                newRects.reduce((acc, newRect, index) => {
+                  const { shapeIndex } = selectedShapesProps[index];
+                  const item = acc[shapeIndex];
+                  return arrayReplace(acc, shapeIndex, {
                     ...item,
                     ...newRect,
-                  })
-                );
-              }}
-              onDelete={() => {
-                setItems(currentItems => arrayReplace(currentItems, index, []));
-              }}
-              ResizeHandleComponent={ResizeHandleComponent}
-            />
-          );
-        })}
+                  });
+                }, currentItems)
+              );
+            }}
+            onDelete={(event, selectedShapesProps) => {
+              setItems(currentItems =>
+                selectedShapesProps
+                  .map(p => p.shapeIndex)
+                  // Delete the indices in reverse so as not to shift the
+                  // other array elements and screw up the array indices
+                  .sort()
+                  .reverse()
+                  .reduce(
+                    (acc, shapeIndex) => arrayReplace(acc, shapeIndex, []),
+                    currentItems
+                  )
+              );
+            }}
+            SelectionComponent={SelectionComponent}
+          >
+            {shapes}
+          </SelectionLayer>
+        ) : (
+          shapes
+        )}
       </ShapeEditor>
     </div>
   );
@@ -116,13 +190,15 @@ const EasyMode = ({ initialItems, includeImageLayer, includeDrawLayer }) => {
 EasyMode.propTypes = {
   includeDrawLayer: PropTypes.bool,
   includeImageLayer: PropTypes.bool,
-  initialItems: PropTypes.arrayOf(PropTypes.shape({})),
+  includeSelectionLayer: PropTypes.bool,
+  initialItemCount: PropTypes.number,
 };
 
 EasyMode.defaultProps = {
   includeDrawLayer: false,
   includeImageLayer: false,
-  initialItems: null,
+  includeSelectionLayer: false,
+  initialItemCount: 1,
 };
 
 export default EasyMode;

@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, fireEvent, EasyMode } from '../testUtils';
+import { Rectangle } from '../types';
 
 const mouseDrag = (el, { dx, dy }) => {
   fireEvent.mouseDown(el, { clientX: 0, clientY: 0 });
@@ -7,7 +8,7 @@ const mouseDrag = (el, { dx, dy }) => {
   fireEvent.mouseUp(el, { clientX: dx, clientY: dy });
 };
 
-const expectRect = (shape, rect) => {
+const expectRect = (shape: HTMLElement, rect: Rectangle) => {
   expect(shape.parentNode).toHaveAttribute(
     'transform',
     `translate(${rect.x},${rect.y})`
@@ -46,4 +47,31 @@ it('can resize a shape', () => {
   const nwResizeHandle = getByTestId('resize-handle-nw');
   mouseDrag(nwResizeHandle, { dx: -30, dy: -30 });
   expectRect(shape, { x: -10, y: 20, height: 55, width: 110 });
+});
+
+it('can select a shape by click-and-drag', () => {
+  const { queryByTestId, container } = render(
+    <EasyMode initialItemCount={2} includeSelectionLayer />
+  );
+
+  expect(queryByTestId('selection-rect')).toBeNull();
+
+  const selectionLayer = container.querySelector('.rse-selection-layer');
+  mouseDrag(selectionLayer, { dx: 130, dy: 130 });
+
+  expect(queryByTestId('selection-rect')).toBeTruthy();
+});
+
+it.skip('can select a shape via shift-click', () => {
+  const { getAllByTestId, queryByTestId, container } = render(
+    <EasyMode initialItemCount={2} includeSelectionLayer />
+  );
+
+  const shapes = getAllByTestId('shape-rect');
+
+  fireEvent.click(shapes[0]);
+  expect(queryByTestId('selection-rect')).toBeNull();
+
+  fireEvent.click(shapes[1], { shiftKey: true });
+  expect(queryByTestId('selection-rect')).toBeTruthy();
 });

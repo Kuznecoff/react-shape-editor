@@ -37,12 +37,7 @@ test('shapes are not re-rendered when their siblings change', () => {
     </ShapeEditorProfiled>
   );
   const targetEl = document.createElement('div');
-  ReactDOM.render(
-    // We wrap it with an ad-hoc component in order to allow setProps to affect
-    // InnerComponentProfiled2 props directly
-    <SimpleExample />,
-    targetEl
-  );
+  ReactDOM.render(<SimpleExample />, targetEl);
 
   // Check that each component's render function was called just once
   expect(ShapeEditorProfiled).toHaveCommittedTimes(1);
