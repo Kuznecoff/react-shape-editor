@@ -7,7 +7,7 @@ import {
   defaultConstrainMove,
   defaultConstrainResize,
 } from './utils.ts';
-import { useUpdatingRef, useIsMountedRef } from './hooks.ts';
+import { useUpdatingRef } from './hooks.ts';
 
 const getHandles = (
   ResizeHandleComponent,
@@ -500,8 +500,6 @@ function wrapShape(WrappedComponent) {
 
     const active = artificialActive !== null ? artificialActive : nativeActive;
 
-    const isMountedRef = useIsMountedRef();
-
     const [
       {
         isMouseDown,
@@ -584,7 +582,7 @@ function wrapShape(WrappedComponent) {
     );
 
     const shapeOnKeyDown = useOnKeyDown(props);
-    const gotFocusAfterClickRef = useRef(false);
+    const gotFocusAfterClickRef = useRef(true);
 
     return (
       <g
@@ -611,20 +609,18 @@ function wrapShape(WrappedComponent) {
           setNativeActive(false);
           onBlur(event, props);
         }}
-        onMouseDown={event => {
-          event.stopPropagation();
-
+        onMouseUp={() => {
           // Focusing support for Safari
           // Safari (12) does not currently allow focusing via mouse events,
           // even on elements with tabIndex="0" (tabbing with the keyboard
           // does work, however). This logic waits to see if focus was called
           // following a click, and forces the focused state if necessary.
-          gotFocusAfterClickRef.current = false;
-          setTimeout(() => {
-            if (isMountedRef.current && !gotFocusAfterClickRef.current) {
-              shapeActions.forceFocus();
-            }
-          });
+          if (!gotFocusAfterClickRef.current) {
+            shapeActions.forceFocus();
+          }
+        }}
+        onMouseDown={event => {
+          event.stopPropagation();
 
           if (event.shiftKey) {
             onChildToggleSelection(shapeId, isInternalComponent, event);
@@ -635,6 +631,8 @@ function wrapShape(WrappedComponent) {
             event.preventDefault();
             return;
           }
+
+          gotFocusAfterClickRef.current = false;
 
           const { x: planeX, y: planeY } = getPlaneCoordinatesFromEvent(event);
 
