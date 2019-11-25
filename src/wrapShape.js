@@ -726,7 +726,7 @@ function wrapShape(WrappedComponent) {
     WrappedComponent.name ||
     'Component'})`;
 
-  return WrappedShape;
+  return React.memo(WrappedShape);
 }
 
 export default wrapShape;
