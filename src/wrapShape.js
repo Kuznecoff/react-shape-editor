@@ -182,9 +182,18 @@ const useShapeActions = (props, nativeActive, wrapperElRef, setDragState) => {
         return;
       }
 
-      // IE11 doesn't have the focus method
-      if (wrapperElRef.current && wrapperElRef.current.focus) {
-        wrapperElRef.current.focus();
+      if (wrapperElRef.current) {
+        if (wrapperElRef.current.focus) {
+          wrapperElRef.current.focus();
+        } else {
+          // IE11 doesn't have the focus method, so we use this hack from
+          // https://allyjs.io/tutorials/focusing-in-svg.html#focusing-svg-elements
+          try {
+            HTMLElement.prototype.focus.apply(wrapperElRef.current);
+          } catch (error) {
+            // silence the error
+          }
+        }
       }
     },
     simulateTransform(nextRect) {
