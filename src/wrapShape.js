@@ -7,24 +7,7 @@ import {
   defaultConstrainMove,
   defaultConstrainResize,
 } from './utils.ts';
-
-const useUpdatingRef = value => {
-  const ref = useRef(value);
-  ref.current = value;
-  return ref;
-};
-const useIsMountedRef = () => {
-  const isMountedRef = useRef(false);
-  useEffect(() => {
-    isMountedRef.current = true;
-
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, [isMountedRef]);
-
-  return isMountedRef;
-};
+import { useUpdatingRef, useIsMountedRef } from './hooks.ts';
 
 const getHandles = (
   ResizeHandleComponent,
