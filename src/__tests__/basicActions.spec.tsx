@@ -60,7 +60,7 @@ it('can resize a shape', () => {
   expectRect(shape, { x: -10, y: 20, height: 55, width: 110 });
 });
 
-it('can select a shape by click-and-drag', () => {
+it('can select multiple shapes by click-and-drag', () => {
   const { queryByTestId, container } = render(
     <EasyMode initialItemCount={2} includeSelectionLayer />
   );
@@ -73,16 +73,19 @@ it('can select a shape by click-and-drag', () => {
   expect(queryByTestId('selection-rect')).toBeTruthy();
 });
 
-it.skip('can select a shape via shift-click', () => {
-  const { getAllByTestId, queryByTestId, container } = render(
+it('can select multiple shapes via shift-click', () => {
+  const { getAllByTestId, queryByTestId } = render(
     <EasyMode initialItemCount={2} includeSelectionLayer />
   );
 
   const shapes = getAllByTestId('shape-rect');
 
-  fireEvent.click(shapes[0]);
+  fireEvent.mouseDown(shapes[0]);
+  fireEvent.mouseUp(shapes[0]);
   expect(queryByTestId('selection-rect')).toBeNull();
+  expect(document.activeElement).toBe(shapes[0].parentNode);
 
-  fireEvent.click(shapes[1], { shiftKey: true });
+  fireEvent.mouseDown(shapes[1], { shiftKey: true });
+  fireEvent.mouseUp(shapes[1], { shiftKey: true });
   expect(queryByTestId('selection-rect')).toBeTruthy();
 });
