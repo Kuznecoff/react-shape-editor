@@ -25,10 +25,15 @@ interface CallbackContextProps {
   ) => void;
 }
 
-export const CallbacksContext = React.createContext({} as CallbackContextProps);
-export const VectorHeightContext = React.createContext(0);
-export const VectorWidthContext = React.createContext(0);
-export const ScaleContext = React.createContext(1);
+const CallbacksContext = React.createContext({} as CallbackContextProps);
+const VectorHeightContext = React.createContext(0);
+const VectorWidthContext = React.createContext(0);
+const ScaleContext = React.createContext(1);
+
+export const CallbacksProvider = CallbacksContext.Provider;
+export const VectorHeightProvider = VectorHeightContext.Provider;
+export const VectorWidthProvider = VectorWidthContext.Provider;
+export const ScaleProvider = ScaleContext.Provider;
 
 const useRootContext = () => ({
   callbacks: useContext(CallbacksContext),

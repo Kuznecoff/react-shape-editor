@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { getRectFromCornerCoordinates } from './utils.ts';
 import {
   deprecatedWrappingStyle as withContext,
-  CallbacksContext,
+  CallbacksProvider,
 } from './useRootContext.tsx';
 import DefaultSelectionDrawComponent from './DefaultSelectionDrawComponent';
 import DefaultSelectionComponent from './DefaultSelectionComponent';
@@ -487,12 +487,12 @@ class SelectionLayer extends Component {
             onSelectionChange([]);
           }}
         />
-        <CallbacksContext.Provider value={this.callbacks}>
+        <CallbacksProvider value={this.callbacks}>
           <>
             {children}
             {extra}
           </>
-        </CallbacksContext.Provider>
+        </CallbacksProvider>
       </>
     );
   }

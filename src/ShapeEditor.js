@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import {
-  CallbacksContext,
-  VectorHeightContext,
-  VectorWidthContext,
-  ScaleContext,
+  CallbacksProvider,
+  VectorHeightProvider,
+  VectorWidthProvider,
+  ScaleProvider,
 } from './useRootContext.tsx';
 
 class ShapeEditor extends Component {
@@ -156,15 +156,13 @@ class ShapeEditor extends Component {
         // eslint-disable-next-line react/jsx-props-no-spreading
         {...otherProps}
       >
-        <CallbacksContext.Provider value={this.callbacks}>
-          <VectorHeightContext.Provider value={vectorHeight}>
-            <VectorWidthContext.Provider value={vectorWidth}>
-              <ScaleContext.Provider value={scale}>
-                {children}
-              </ScaleContext.Provider>
-            </VectorWidthContext.Provider>
-          </VectorHeightContext.Provider>
-        </CallbacksContext.Provider>
+        <CallbacksProvider value={this.callbacks}>
+          <VectorHeightProvider value={vectorHeight}>
+            <VectorWidthProvider value={vectorWidth}>
+              <ScaleProvider value={scale}>{children}</ScaleProvider>
+            </VectorWidthProvider>
+          </VectorHeightProvider>
+        </CallbacksProvider>
       </svg>
     );
   }
