@@ -225,23 +225,25 @@ class App extends Component {
                 constrainMove={this.constrainMove}
                 constrainResize={this.constrainResize}
                 DrawPreviewComponent={
-                  shapeChoices[items.length % shapeChoices.length]
+                  shapeChoices[iterator % shapeChoices.length]
                 }
                 onAddShape={({ x, y, width, height }) => {
-                  this.setState(state => ({
-                    items: [
-                      ...state.items,
-                      {
-                        id: `id${iterator}`,
-                        shapeTypeIndex: iterator,
-                        x,
-                        y,
-                        width,
-                        height,
-                      },
-                    ],
-                  }));
-                  iterator += 1;
+                  this.setState(state => {
+                    iterator += 1;
+                    return {
+                      items: [
+                        ...state.items,
+                        {
+                          id: `id${iterator}`,
+                          shapeTypeIndex: iterator - 1,
+                          x,
+                          y,
+                          width,
+                          height,
+                        },
+                      ],
+                    };
+                  });
                 }}
               />
             )}
