@@ -8,9 +8,9 @@ interface ShapeActions {
 }
 
 interface CallbackContextProps {
-  getPlaneCoordinatesFromEvent: (event: MouseEvent) => Point;
+  getPlaneCoordinatesFromEvent: (event: React.MouseEvent) => Point;
   onShapeMountedOrUnmounted: (
-    shapeActionRef: React.MutableRefObject<MouseHandlerFunc>,
+    shapeActionRef: React.MutableRefObject<ShapeActions>,
     didMount: boolean
   ) => void;
   setMouseHandlerRef: (
@@ -21,7 +21,7 @@ interface CallbackContextProps {
   onChildToggleSelection: (
     shapeId: boolean,
     isInternalComponent: boolean,
-    event: MouseEvent
+    event: React.MouseEvent
   ) => void;
 }
 

@@ -35,5 +35,5 @@ export interface ConstrainResizeFunc {
 }
 
 export interface MouseHandlerFunc {
-  (event: Event): void;
+  (event: React.MouseEvent): void;
 }

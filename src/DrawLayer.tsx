@@ -63,7 +63,10 @@ const DrawLayer: React.FunctionComponent<Props> = ({
     setDragState,
   ] = useState(defaultDragState);
 
-  const getCoordinatesFromEvent = (event, isStartEvent = false) => {
+  const getCoordinatesFromEvent = (
+    event: React.MouseEvent,
+    isStartEvent = false
+  ) => {
     const { x: rawX, y: rawY } = getPlaneCoordinatesFromEvent(event);
 
     if (isStartEvent) {
@@ -116,7 +119,7 @@ const DrawLayer: React.FunctionComponent<Props> = ({
     onAddShape(newRect);
   };
 
-  const onMouseMove = event => {
+  const onMouseMove = (event: React.MouseEvent) => {
     if (!isMouseDown) {
       return;
     }
@@ -130,7 +133,7 @@ const DrawLayer: React.FunctionComponent<Props> = ({
   const mouseHandlerRef: React.MutableRefObject<MouseHandlerFunc> = useRef(
     () => {}
   );
-  mouseHandlerRef.current = event => {
+  mouseHandlerRef.current = (event: React.MouseEvent) => {
     if (event.type === 'mousemove') {
       onMouseMove(event);
     } else if (event.type === 'mouseup') {
