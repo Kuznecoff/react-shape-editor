@@ -6,6 +6,7 @@ import {
   VectorWidthProvider,
   ScaleProvider,
 } from './useRootContext.tsx';
+import { useIsMountedRef } from './hooks.ts';
 
 const useMouseHandler = () => {
   const mouseHandlerRefRef = useRef();
@@ -79,12 +80,18 @@ const useChildAddDeleteHandler = (focusOnAdd, focusOnDelete) => {
     lastDeletedRectRef.current = null;
   });
 
+  const editorMountedRef = useIsMountedRef();
+
   const onShapeMountedOrUnmounted = (shapeActionsRef, didMount) => {
     if (didMount) {
-      justAddedShapeActionRefsRef.current = [
-        ...justAddedShapeActionRefsRef.current,
-        shapeActionsRef,
-      ];
+      // Only monitor shapes added after the initial editor render
+      if (editorMountedRef.current) {
+        justAddedShapeActionRefsRef.current = [
+          ...justAddedShapeActionRefsRef.current,
+          shapeActionsRef,
+        ];
+      }
+
       wrappedShapeActionRefsRef.current = [
         ...wrappedShapeActionRefsRef.current,
         shapeActionsRef,
