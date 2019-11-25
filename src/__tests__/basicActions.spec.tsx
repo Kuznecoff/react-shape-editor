@@ -18,11 +18,22 @@ const expectRect = (shape: HTMLElement, rect: Rectangle) => {
 };
 
 it('can delete a shape with keyboard shortcut', () => {
-  const { queryAllByTestId } = render(<EasyMode />);
+  const { queryAllByTestId } = render(<EasyMode initialItemCount={2} />);
 
-  expect(queryAllByTestId('shape-rect')).toHaveLength(1);
+  expect(queryAllByTestId('shape-rect')).toHaveLength(2);
   fireEvent.keyDown(queryAllByTestId('shape-rect')[0], { key: 'Delete' });
+  expect(queryAllByTestId('shape-rect')).toHaveLength(1);
+
+  // Deleting will move the focus to the next shape
+  expect(document.activeElement).toBe(
+    queryAllByTestId('shape-rect')[0].parentNode
+  );
+  fireEvent.keyDown(document.activeElement as Element, { key: 'Delete' });
   expect(queryAllByTestId('shape-rect')).toHaveLength(0);
+
+  // After deleting the last shape, focus returns to the default,
+  // which I guess is the document body
+  expect(document.activeElement).toBe(document.body);
 });
 
 it('can create a shape', () => {
