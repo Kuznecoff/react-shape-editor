@@ -1,5 +1,5 @@
-import { useRef, useEffect } from 'react';
-import { ShapeActions, ShapeId, MouseHandlerFunc } from './types';
+import React, { useRef, useContext } from 'react';
+import { ShapeActions, ShapeId } from './types';
 import { useUpdatingRef } from './hooks';
 
 export enum EventType {
@@ -10,6 +10,11 @@ export enum EventType {
   ChildToggleSelection = 'ChildToggleSelection',
 }
 
+type MountedOrUnmountedListener = (
+  shapeActionRef: React.MutableRefObject<ShapeActions>,
+  didMount: boolean
+) => void;
+type MouseEventListener = (event: MouseEvent) => void;
 type ChildRectChangedListener = (
   shapeId: ShapeId,
   isInternalComponent: boolean
@@ -17,13 +22,6 @@ type ChildRectChangedListener = (
 type ChildFocusListener = (
   shapeId: ShapeId,
   isInternalComponent: boolean
-) => void;
-type MountedOrUnmountedListener = (
-  shapeActionRef: React.MutableRefObject<ShapeActions>,
-  didMount: boolean
-) => void;
-type MouseEventListener = (
-  mouseHandlerRef: React.MutableRefObject<MouseHandlerFunc>
 ) => void;
 type ChildToggleSelectionListener = (
   shapeId: ShapeId,
@@ -42,7 +40,11 @@ type CustomListener =
 type ListenerRef = React.MutableRefObject<Listener>;
 
 class EventEmitter {
-  listeners = {};
+  private listeners: object;
+
+  constructor() {
+    this.listeners = {};
+  }
 
   addListener(eventType: EventType, fn: ListenerRef): EventEmitter {
     this.listeners[eventType] = this.listeners[eventType] || [];
@@ -101,11 +103,22 @@ export const useAdditionalListener = (
 ): void => {
   const listenerRef = useUpdatingRef(listener);
 
-  useEffect(() => {
-    emitter.addListener(eventType, listenerRef);
+  emitter
+    .removeListener(eventType, listenerRef)
+    .addListener(eventType, listenerRef);
+};
 
-    return () => {
-      emitter.removeListener(eventType, listenerRef);
-    };
-  }, []);
+const EventEmitterContext = React.createContext<EventEmitter | undefined>(
+  undefined
+);
+export const EventEmitterProvider = EventEmitterContext.Provider;
+export const useEventEmitterContext = (): EventEmitter => {
+  const emitter = useContext(EventEmitterContext);
+  if (emitter === undefined) {
+    throw new Error(
+      'useEventEmitterContext must be used within a EventEmitterProvider'
+    );
+  }
+
+  return emitter;
 };

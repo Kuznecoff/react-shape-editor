@@ -1,31 +1,23 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import {
-  CallbacksProvider,
+  CoordinateGetterRefProvider,
+  EventEmitterProvider,
+  ScaleProvider,
   VectorHeightProvider,
   VectorWidthProvider,
-  ScaleProvider,
 } from './useRootContext.tsx';
-import { useIsMountedRef } from './hooks.ts';
+import { useIsMountedRef, useUpdatingRef } from './hooks.ts';
+import {
+  useNewEventEmitter,
+  useAdditionalListener,
+  EventType,
+} from './EventEmitter.ts';
 
-const useMouseHandler = () => {
-  const mouseHandlerRefRef = useRef();
-
-  const setMouseHandlerRef = useCallback(
-    mouseHandlerRef => {
-      mouseHandlerRefRef.current = mouseHandlerRef;
-    },
-    [mouseHandlerRefRef]
-  );
-
+const useMouseEventForwarding = eventEmitter => {
   useEffect(() => {
     const onMouseEvent = event => {
-      if (
-        mouseHandlerRefRef.current &&
-        typeof mouseHandlerRefRef.current.current === 'function'
-      ) {
-        mouseHandlerRefRef.current.current(event);
-      }
+      eventEmitter.emit(EventType.MouseEvent, event);
     };
 
     window.addEventListener('mouseup', onMouseEvent);
@@ -35,9 +27,7 @@ const useMouseHandler = () => {
       window.removeEventListener('mouseup', onMouseEvent);
       window.removeEventListener('mousemove', onMouseEvent);
     };
-  }, [mouseHandlerRefRef]);
-
-  return setMouseHandlerRef;
+  }, [eventEmitter]);
 };
 
 const useChildAddDeleteHandler = (focusOnAdd, focusOnDelete) => {
@@ -119,7 +109,7 @@ const ShapeEditor = ({
   ...otherProps
 }) => {
   const svgElRef = useRef();
-  const getPlaneCoordinatesFromEvent = useCallback(
+  const getPlaneCoordinatesFromEventRef = useUpdatingRef(
     (event, { x: offsetX = 0, y: offsetY = 0 } = {}) => {
       const { top, left } = svgElRef.current.getBoundingClientRect();
 
@@ -127,27 +117,21 @@ const ShapeEditor = ({
         x: (event.clientX - left) / scale - offsetX,
         y: (event.clientY - top) / scale - offsetY,
       };
-    },
-    [scale]
+    }
   );
 
   const onShapeMountedOrUnmounted = useChildAddDeleteHandler(
     focusOnAdd,
     focusOnDelete
   );
-  const setMouseHandlerRef = useMouseHandler();
 
-  const callbacksRef = useRef({
-    onShapeMountedOrUnmounted,
-    getPlaneCoordinatesFromEvent,
-    setMouseHandlerRef,
-    onChildRectChanged: () => {},
-    onChildFocus: () => {},
-    onChildToggleSelection: () => {},
-  });
-  callbacksRef.current.onShapeMountedOrUnmounted = onShapeMountedOrUnmounted;
-  callbacksRef.current.getPlaneCoordinatesFromEvent = getPlaneCoordinatesFromEvent;
-  callbacksRef.current.setMouseHandlerRef = setMouseHandlerRef;
+  const eventEmitter = useNewEventEmitter();
+  useMouseEventForwarding(eventEmitter);
+  useAdditionalListener(
+    eventEmitter,
+    EventType.MountedOrUnmounted,
+    onShapeMountedOrUnmounted
+  );
 
   return (
     <svg
@@ -165,13 +149,15 @@ const ShapeEditor = ({
       // eslint-disable-next-line react/jsx-props-no-spreading
       {...otherProps}
     >
-      <CallbacksProvider value={callbacksRef.current}>
-        <VectorHeightProvider value={vectorHeight}>
-          <VectorWidthProvider value={vectorWidth}>
-            <ScaleProvider value={scale}>{children}</ScaleProvider>
-          </VectorWidthProvider>
-        </VectorHeightProvider>
-      </CallbacksProvider>
+      <CoordinateGetterRefProvider value={getPlaneCoordinatesFromEventRef}>
+        <EventEmitterProvider value={eventEmitter}>
+          <VectorHeightProvider value={vectorHeight}>
+            <VectorWidthProvider value={vectorWidth}>
+              <ScaleProvider value={scale}>{children}</ScaleProvider>
+            </VectorWidthProvider>
+          </VectorHeightProvider>
+        </EventEmitterProvider>
+      </CoordinateGetterRefProvider>
     </svg>
   );
 };

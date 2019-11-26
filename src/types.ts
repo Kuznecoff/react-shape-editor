@@ -36,10 +36,6 @@ export interface ConstrainResizeFunc {
   (args: ConstrainResizeFuncArgs): Point;
 }
 
-export interface MouseHandlerFunc {
-  (event: React.MouseEvent): void;
-}
-
 export interface ShapeActions {
   props: object;
   forceFocus: () => void;

@@ -1,46 +1,57 @@
 import React, { useContext } from 'react';
-import { Point, MouseHandlerFunc, ShapeActions } from './types';
+import { Point } from './types';
+import { useEventEmitterContext } from './EventEmitter';
 
-interface CallbackContextProps {
-  getPlaneCoordinatesFromEvent: (event: React.MouseEvent) => Point;
-  onShapeMountedOrUnmounted: (
-    shapeActionRef: React.MutableRefObject<ShapeActions>,
-    didMount: boolean
-  ) => void;
-  setMouseHandlerRef: (
-    mouseHandlerRef: React.MutableRefObject<MouseHandlerFunc>
-  ) => void;
-  onChildRectChanged: (shapeId: boolean, isInternalComponent: boolean) => void;
-  onChildFocus: (shapeId: boolean, isInternalComponent: boolean) => void;
-  onChildToggleSelection: (
-    shapeId: boolean,
-    isInternalComponent: boolean,
-    event: React.MouseEvent
-  ) => void;
-}
+type CoordinateGetterType = React.MutableRefObject<
+  (event: React.MouseEvent | MouseEvent) => Point
+>;
 
-const CallbacksContext = React.createContext({} as CallbackContextProps);
-const VectorHeightContext = React.createContext(0);
-const VectorWidthContext = React.createContext(0);
-const ScaleContext = React.createContext(1);
+const CoordinateGetterRefContext = React.createContext<
+  CoordinateGetterType | undefined
+>(undefined);
 
-export const CallbacksProvider = CallbacksContext.Provider;
+const VectorHeightContext = React.createContext<number | undefined>(undefined);
+const VectorWidthContext = React.createContext<number | undefined>(undefined);
+const ScaleContext = React.createContext<number | undefined>(undefined);
+
+export const CoordinateGetterRefProvider = CoordinateGetterRefContext.Provider;
 export const VectorHeightProvider = VectorHeightContext.Provider;
 export const VectorWidthProvider = VectorWidthContext.Provider;
 export const ScaleProvider = ScaleContext.Provider;
+export { EventEmitterProvider } from './EventEmitter';
 
-const useRootContext = () => ({
-  callbacks: useContext(CallbacksContext),
-  vectorHeight: useContext(VectorHeightContext),
-  vectorWidth: useContext(VectorWidthContext),
-  scale: useContext(ScaleContext),
-});
+const useRootContext = () => {
+  const coordinateGetterRef = useContext(CoordinateGetterRefContext);
+  if (coordinateGetterRef === undefined) {
+    throw new Error(
+      'useRootContext must be used within a CoordinateGetterRefProvider'
+    );
+  }
+
+  const vectorHeight = useContext(VectorHeightContext);
+  if (vectorHeight === undefined) {
+    throw new Error(
+      'useRootContext must be used within a VectorHeightProvider'
+    );
+  }
+
+  const vectorWidth = useContext(VectorWidthContext);
+  if (vectorWidth === undefined) {
+    throw new Error('useRootContext must be used within a VectorWidthProvider');
+  }
+
+  const scale = useContext(ScaleContext);
+  if (scale === undefined) {
+    throw new Error('useRootContext must be used within a ScaleProvider');
+  }
+
+  return {
+    eventEmitter: useEventEmitterContext(),
+    coordinateGetterRef,
+    vectorHeight,
+    vectorWidth,
+    scale,
+  };
+};
 
 export default useRootContext;
-
-export const deprecatedWrappingStyle = (
-  Component: React.ComponentType
-): React.FunctionComponent => props => {
-  const extraContext = useRootContext();
-  return <Component {...props} {...extraContext} {...extraContext.callbacks} />;
-};

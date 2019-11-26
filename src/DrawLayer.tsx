@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import {
   getRectFromCornerCoordinates,
@@ -8,12 +8,13 @@ import {
 import useRootContext from './useRootContext';
 import DefaultDrawPreviewComponent from './DefaultDrawPreviewComponent';
 import {
-  MouseHandlerFunc,
   Point,
   ConstrainMoveFunc,
   ConstrainResizeFunc,
   Rectangle,
 } from './types';
+import { EventType } from './EventEmitter';
+import { useUpdatingRef } from './hooks';
 
 interface DragState {
   dragStartCoordinates: Point;
@@ -55,7 +56,8 @@ const DrawLayer: React.FunctionComponent<Props> = ({
     scale,
     vectorHeight,
     vectorWidth,
-    callbacks: { setMouseHandlerRef, getPlaneCoordinatesFromEvent },
+    eventEmitter,
+    coordinateGetterRef,
   } = useRootContext();
 
   const [
@@ -64,10 +66,10 @@ const DrawLayer: React.FunctionComponent<Props> = ({
   ] = useState(defaultDragState);
 
   const getCoordinatesFromEvent = (
-    event: React.MouseEvent,
+    event: React.MouseEvent | MouseEvent,
     isStartEvent = false
   ) => {
-    const { x: rawX, y: rawY } = getPlaneCoordinatesFromEvent(event);
+    const { x: rawX, y: rawY } = coordinateGetterRef.current(event);
 
     if (isStartEvent) {
       const { x, y } = constrainMove({
@@ -119,7 +121,7 @@ const DrawLayer: React.FunctionComponent<Props> = ({
     onAddShape(newRect);
   };
 
-  const onMouseMove = (event: React.MouseEvent) => {
+  const onMouseMove = (event: MouseEvent) => {
     if (!isMouseDown) {
       return;
     }
@@ -130,16 +132,13 @@ const DrawLayer: React.FunctionComponent<Props> = ({
     }));
   };
 
-  const mouseHandlerRef: React.MutableRefObject<MouseHandlerFunc> = useRef(
-    () => {}
-  );
-  mouseHandlerRef.current = (event: React.MouseEvent) => {
+  const mouseHandlerRef = useUpdatingRef((event: MouseEvent) => {
     if (event.type === 'mousemove') {
       onMouseMove(event);
     } else if (event.type === 'mouseup') {
       onMouseUp();
     }
-  };
+  });
 
   const draggedRect = isMouseDown
     ? getRectFromCornerCoordinates(dragStartCoordinates, dragCurrentCoordinates)
@@ -154,7 +153,10 @@ const DrawLayer: React.FunctionComponent<Props> = ({
         fill="transparent"
         onMouseDown={event => {
           const startCoordinates = getCoordinatesFromEvent(event, true);
-          setMouseHandlerRef(mouseHandlerRef);
+          eventEmitter.overwriteAllListenersOfType(
+            EventType.MouseEvent,
+            mouseHandlerRef
+          );
           setDragState({
             dragStartCoordinates: startCoordinates,
             dragCurrentCoordinates: startCoordinates,

@@ -8,6 +8,7 @@ import {
   defaultConstrainResize,
 } from './utils.ts';
 import { useUpdatingRef } from './hooks.ts';
+import { EventType } from './EventEmitter.ts';
 
 const getHandles = (
   ResizeHandleComponent,
@@ -16,8 +17,8 @@ const getHandles = (
   active,
   nativeActive,
   isInSelectionGroup,
-  getPlaneCoordinatesFromEvent,
-  setMouseHandlerRef,
+  coordinateGetterRef,
+  eventEmitter,
   mouseHandlerRef,
   setDragState
 ) => {
@@ -82,7 +83,7 @@ const getHandles = (
         onMouseDown={event => {
           event.stopPropagation();
 
-          const { x: planeX, y: planeY } = getPlaneCoordinatesFromEvent(event);
+          const { x: planeX, y: planeY } = coordinateGetterRef.current(event);
 
           const movingPoint = movementPoints[movementReferenceCorner];
           const anchorPoint = anchorPoints[movementReferenceCorner];
@@ -91,7 +92,10 @@ const getHandles = (
             y: planeY - movingPoint.y,
           };
 
-          setMouseHandlerRef(mouseHandlerRef);
+          eventEmitter.overwriteAllListenersOfType(
+            EventType.MouseEvent,
+            mouseHandlerRef
+          );
 
           setDragState({
             isMouseDown: true,
@@ -113,54 +117,33 @@ const getHandles = (
 };
 
 const useNotifyRoot = (
+  eventEmitter,
   height,
   width,
   x,
   y,
-  onChildRectChanged,
-  onShapeMountedOrUnmounted,
   shapeId,
   isInternalComponent,
   shapeActions
 ) => {
-  // Use refs for these so we can always use their most recent value,
-  // but without triggering the rect change callback
-  const onChildRectChangedRef = useUpdatingRef(onChildRectChanged);
-  const shapeIdRef = useUpdatingRef(shapeId);
-  const isInternalComponentRef = useUpdatingRef(isInternalComponent);
-
   // Notify of shape rectangle changes
   useEffect(() => {
-    onChildRectChangedRef.current(
-      shapeIdRef.current,
-      isInternalComponentRef.current
-    );
-  }, [
-    height,
-    width,
-    x,
-    y,
-    onChildRectChangedRef,
-    shapeIdRef,
-    isInternalComponentRef,
-  ]);
+    eventEmitter.emit(EventType.ChildRectChanged, shapeId, isInternalComponent);
+  }, [height, width, x, y, shapeId, isInternalComponent, eventEmitter]);
 
   // Notify of mount/unmount
-  const onShapeMountedOrUnmountedRef = useUpdatingRef(
-    onShapeMountedOrUnmounted
-  );
   const shapeActionsRef = useUpdatingRef(shapeActions);
   useEffect(() => {
-    if (!isInternalComponentRef.current) {
-      onShapeMountedOrUnmountedRef.current(shapeActionsRef, true);
+    if (!isInternalComponent) {
+      eventEmitter.emit(EventType.MountedOrUnmounted, shapeActionsRef, true);
     }
 
     return () => {
-      if (!isInternalComponentRef.current) {
-        onShapeMountedOrUnmountedRef.current(shapeActionsRef, false);
+      if (!isInternalComponent) {
+        eventEmitter.emit(EventType.MountedOrUnmounted, shapeActionsRef, false);
       }
     };
-  }, [shapeActionsRef, isInternalComponentRef, onShapeMountedOrUnmountedRef]);
+  }, [shapeActionsRef, isInternalComponent, eventEmitter]);
 };
 
 const defaultDragState = {
@@ -227,7 +210,7 @@ const useMouseHandlerRef = (
   dragInnerOffset,
   dragLock,
   dragStartCoordinates,
-  getPlaneCoordinatesFromEvent,
+  coordinateGetterRef,
   isDragToMove,
   isMouseDown,
   setDragState
@@ -244,7 +227,7 @@ const useMouseHandlerRef = (
   } = props;
 
   const getParentCoordinatesForMove = event => {
-    const { x: rawX, y: rawY } = getPlaneCoordinatesFromEvent(
+    const { x: rawX, y: rawY } = coordinateGetterRef.current(
       event,
       dragInnerOffset
     );
@@ -260,7 +243,7 @@ const useMouseHandlerRef = (
   };
 
   const getParentCoordinatesForResize = event => {
-    const { x: rawX, y: rawY } = getPlaneCoordinatesFromEvent(
+    const { x: rawX, y: rawY } = coordinateGetterRef.current(
       event,
       dragInnerOffset
     );
@@ -482,17 +465,9 @@ function wrapShape(WrappedComponent) {
       x,
       y,
     } = props;
-    const {
-      scale,
-      callbacks: {
-        getPlaneCoordinatesFromEvent,
-        onShapeMountedOrUnmounted,
-        setMouseHandlerRef,
-        onChildRectChanged,
-        onChildFocus,
-        onChildToggleSelection,
-      },
-    } = useRootContext();
+
+    const { scale, coordinateGetterRef, eventEmitter } = useRootContext();
+
     const wrapperElRef = useRef(null);
 
     const [nativeActive, setNativeActive] = useState(false);
@@ -526,12 +501,11 @@ function wrapShape(WrappedComponent) {
     }
 
     useNotifyRoot(
+      eventEmitter,
       height,
       width,
       x,
       y,
-      onChildRectChanged,
-      onShapeMountedOrUnmounted,
       shapeId,
       isInternalComponent,
       shapeActions
@@ -560,7 +534,7 @@ function wrapShape(WrappedComponent) {
       dragInnerOffset,
       dragLock,
       dragStartCoordinates,
-      getPlaneCoordinatesFromEvent,
+      coordinateGetterRef,
       isDragToMove,
       isMouseDown,
       setDragState
@@ -574,8 +548,8 @@ function wrapShape(WrappedComponent) {
       active,
       nativeActive,
       isInSelectionGroup,
-      getPlaneCoordinatesFromEvent,
-      setMouseHandlerRef,
+      coordinateGetterRef,
+      eventEmitter,
       mouseHandlerRef,
       setDragState
     );
@@ -598,7 +572,7 @@ function wrapShape(WrappedComponent) {
         tabIndex={!disabled ? 0 : undefined}
         onFocus={event => {
           gotFocusAfterClickRef.current = true;
-          onChildFocus(shapeId, isInternalComponent);
+          eventEmitter.emit(EventType.ChildFocus, shapeId, isInternalComponent);
           setNativeActive(true);
 
           // Call user-defined focus handler
@@ -622,7 +596,12 @@ function wrapShape(WrappedComponent) {
           event.stopPropagation();
 
           if (event.shiftKey) {
-            onChildToggleSelection(shapeId, isInternalComponent, event);
+            eventEmitter.emit(
+              EventType.ChildToggleSelection,
+              shapeId,
+              isInternalComponent,
+              event
+            );
 
             // Prevent default to keep this from triggering blur/focus events
             // on the elements involved, which would otherwise cause a wave
@@ -633,9 +612,12 @@ function wrapShape(WrappedComponent) {
 
           gotFocusAfterClickRef.current = false;
 
-          const { x: planeX, y: planeY } = getPlaneCoordinatesFromEvent(event);
+          const { x: planeX, y: planeY } = coordinateGetterRef.current(event);
 
-          setMouseHandlerRef(mouseHandlerRef);
+          eventEmitter.overwriteAllListenersOfType(
+            EventType.MouseEvent,
+            mouseHandlerRef
+          );
           setDragState(prevState => ({
             ...prevState,
             isMouseDown: true,

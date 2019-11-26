@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { getRectFromCornerCoordinates } from './utils.ts';
-import useRootContext, { CallbacksProvider } from './useRootContext.tsx';
+import useRootContext from './useRootContext.tsx';
 import DefaultSelectionDrawComponent from './DefaultSelectionDrawComponent';
 import DefaultSelectionComponent from './DefaultSelectionComponent';
 import { useUpdatingRef, useForceUpdate } from './hooks.ts';
+import { EventType, useAdditionalListener } from './EventEmitter.ts';
 
 const defaultDragState = {
   dragStartCoordinates: null,
@@ -97,7 +98,7 @@ const useMouseHandlerRef = (
   dragStartCoordinates,
   dragCurrentCoordinates,
   setDragState,
-  getPlaneCoordinatesFromEvent,
+  coordinateGetterRef,
   selectionElRef,
   onSelectionChange,
   wrappedShapeActionRefsRef,
@@ -153,7 +154,7 @@ const useMouseHandlerRef = (
 
     setDragState(dragState => ({
       ...dragState,
-      dragCurrentCoordinates: getPlaneCoordinatesFromEvent(event),
+      dragCurrentCoordinates: coordinateGetterRef.current(event),
     }));
   };
 
@@ -169,12 +170,12 @@ const useMouseHandlerRef = (
 };
 
 const useChildAddDeleteHandler = (
-  superOnShapeMountedOrUnmounted,
+  eventEmitter,
   onSelectionChange,
   selectedShapeIds,
-  selectionElRef
+  selectionElRef,
+  wrappedShapeActionRefsRef
 ) => {
-  const wrappedShapeActionRefsRef = useRef({});
   const selectedChildrenDidChangeRef = useRef(false);
   const forceUpdate = useForceUpdate();
 
@@ -206,8 +207,6 @@ const useChildAddDeleteHandler = (
   };
 
   const onShapeMountedOrUnmounted = (shapeActionsRef, didMount) => {
-    // Call the original callback
-    superOnShapeMountedOrUnmounted(shapeActionsRef, didMount);
     const { shapeId } = shapeActionsRef.current.props;
     if (
       !selectedChildrenDidChangeRef.current &&
@@ -217,8 +216,10 @@ const useChildAddDeleteHandler = (
     }
 
     if (didMount) {
+      // eslint-disable-next-line no-param-reassign
       wrappedShapeActionRefsRef.current[shapeId] = shapeActionsRef;
     } else {
+      // eslint-disable-next-line no-param-reassign
       delete wrappedShapeActionRefsRef.current[shapeId];
     }
   };
@@ -314,13 +315,22 @@ const useChildAddDeleteHandler = (
     }
   };
 
-  return {
-    onChildFocus,
-    onChildRectChanged,
-    onChildToggleSelection,
-    onShapeMountedOrUnmounted,
-    wrappedShapeActionRefsRef,
-  };
+  useAdditionalListener(
+    eventEmitter,
+    EventType.MountedOrUnmounted,
+    onShapeMountedOrUnmounted
+  );
+  useAdditionalListener(
+    eventEmitter,
+    EventType.ChildToggleSelection,
+    onChildToggleSelection
+  );
+  useAdditionalListener(
+    eventEmitter,
+    EventType.ChildRectChanged,
+    onChildRectChanged
+  );
+  useAdditionalListener(eventEmitter, EventType.ChildFocus, onChildFocus);
 };
 
 const SelectionLayer = ({
@@ -356,25 +366,18 @@ const SelectionLayer = ({
     scale,
     vectorHeight,
     vectorWidth,
-    callbacks: {
-      getPlaneCoordinatesFromEvent,
-      setMouseHandlerRef,
-      onShapeMountedOrUnmounted: superOnShapeMountedOrUnmounted,
-    },
+    eventEmitter,
+    coordinateGetterRef,
   } = useRootContext();
 
   const selectionElRef = useRef();
-  const {
-    onChildFocus,
-    onChildRectChanged,
-    onChildToggleSelection,
-    onShapeMountedOrUnmounted,
-    wrappedShapeActionRefsRef,
-  } = useChildAddDeleteHandler(
-    superOnShapeMountedOrUnmounted,
+  const wrappedShapeActionRefsRef = useRef({});
+  useChildAddDeleteHandler(
+    eventEmitter,
     onSelectionChange,
     selectedShapeIds,
-    selectionElRef
+    selectionElRef,
+    wrappedShapeActionRefsRef
   );
 
   const mouseHandlerRef = useMouseHandlerRef(
@@ -382,7 +385,7 @@ const SelectionLayer = ({
     dragStartCoordinates,
     dragCurrentCoordinates,
     setDragState,
-    getPlaneCoordinatesFromEvent,
+    coordinateGetterRef,
     selectionElRef,
     onSelectionChange,
     wrappedShapeActionRefsRef,
@@ -493,14 +496,6 @@ const SelectionLayer = ({
     );
   }
 
-  const upgradedCallbacksRef = useRef({});
-  upgradedCallbacksRef.current.getPlaneCoordinatesFromEvent = getPlaneCoordinatesFromEvent;
-  upgradedCallbacksRef.current.setMouseHandlerRef = setMouseHandlerRef;
-  upgradedCallbacksRef.current.onShapeMountedOrUnmounted = onShapeMountedOrUnmounted;
-  upgradedCallbacksRef.current.onChildToggleSelection = onChildToggleSelection;
-  upgradedCallbacksRef.current.onChildFocus = onChildFocus;
-  upgradedCallbacksRef.current.onChildRectChanged = onChildRectChanged;
-
   return (
     <>
       <rect
@@ -509,8 +504,11 @@ const SelectionLayer = ({
         height={vectorHeight}
         fill="transparent"
         onMouseDown={event => {
-          const startCoordinates = getPlaneCoordinatesFromEvent(event);
-          setMouseHandlerRef(mouseHandlerRef);
+          const startCoordinates = coordinateGetterRef.current(event);
+          eventEmitter.overwriteAllListenersOfType(
+            EventType.MouseEvent,
+            mouseHandlerRef
+          );
           setDragState({
             dragStartCoordinates: startCoordinates,
             dragCurrentCoordinates: startCoordinates,
@@ -519,12 +517,9 @@ const SelectionLayer = ({
           onSelectionChange([]);
         }}
       />
-      <CallbacksProvider value={upgradedCallbacksRef.current}>
-        <>
-          {children}
-          {extra}
-        </>
-      </CallbacksProvider>
+
+      {children}
+      {extra}
     </>
   );
 };
