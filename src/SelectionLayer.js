@@ -1,12 +1,10 @@
-import React, { Component } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { getRectFromCornerCoordinates } from './utils.ts';
-import {
-  deprecatedWrappingStyle as withContext,
-  CallbacksProvider,
-} from './useRootContext.tsx';
+import useRootContext, { CallbacksProvider } from './useRootContext.tsx';
 import DefaultSelectionDrawComponent from './DefaultSelectionDrawComponent';
 import DefaultSelectionComponent from './DefaultSelectionComponent';
+import { useUpdatingRef, useForceUpdate } from './hooks.ts';
 
 const defaultDragState = {
   dragStartCoordinates: null,
@@ -94,82 +92,142 @@ const getSelectionRect = childRects => {
   };
 };
 
-class SelectionLayer extends Component {
-  constructor(props) {
-    super(props);
+const useMouseHandlerRef = (
+  isMouseDown,
+  dragStartCoordinates,
+  dragCurrentCoordinates,
+  setDragState,
+  getPlaneCoordinatesFromEvent,
+  selectionElRef,
+  onSelectionChange,
+  wrappedShapeActionRefsRef,
+  selectionIsLargeEnough
+) => {
+  const onMouseUp = () => {
+    if (!isMouseDown) {
+      return;
+    }
 
-    this.state = {
-      ...defaultDragState,
-    };
+    if (!selectionIsLargeEnough()) {
+      setDragState(defaultDragState);
+      return;
+    }
 
-    this.wrappedShapeActionRefs = {};
-
-    this.onMouseUp = this.onMouseUp.bind(this);
-    this.onMouseMove = this.onMouseMove.bind(this);
-    this.mouseHandler = this.mouseHandler.bind(this);
-    this.onChildRectChanged = this.onChildRectChanged.bind(this);
-    this.onChildFocus = this.onChildFocus.bind(this);
-    this.onChildToggleSelection = this.onChildToggleSelection.bind(this);
-    this.onSelectionShapeMountedOrUnmounted = this.onSelectionShapeMountedOrUnmounted.bind(
-      this
+    const selectRect = getRectFromCornerCoordinates(
+      dragStartCoordinates,
+      dragCurrentCoordinates
     );
+    const selectedShapeIds = Object.keys(
+      wrappedShapeActionRefsRef.current
+    ).filter(shapeId => {
+      const { x, y, width, height } = wrappedShapeActionRefsRef.current[
+        shapeId
+      ].current.props;
 
-    this.callbacks = {
-      ...props.callbacks,
-      onChildRectChanged: this.onChildRectChanged,
-      onChildFocus: this.onChildFocus,
-      onChildToggleSelection: this.onChildToggleSelection,
-      onShapeMountedOrUnmounted: this.onSelectionShapeMountedOrUnmounted,
-    };
-  }
+      return (
+        x + width > selectRect.x &&
+        x < selectRect.x + selectRect.width &&
+        y + height > selectRect.y &&
+        y < selectRect.y + selectRect.height
+      );
+    });
 
-  componentWillUnmount() {
-    this.wrappedShapeActionRefs = {};
-  }
+    setDragState(defaultDragState);
 
-  componentDidUpdate() {
-    if (this.selectedChildrenDidChange) {
-      this.selectedChildrenDidChange = false;
+    onSelectionChange(selectedShapeIds);
+    if (selectedShapeIds.length >= 2 && selectionElRef.current) {
+      // Focus on the group selection rect when it is first drawn
+      selectionElRef.current.forceFocus();
+    } else if (selectedShapeIds.length === 1) {
+      // In the event that a single shape is selected, give native focus to it as well
+      wrappedShapeActionRefsRef.current[
+        selectedShapeIds[0]
+      ].current.forceFocus();
+    }
+  };
+
+  const onMouseMove = event => {
+    if (!isMouseDown) {
+      return;
+    }
+
+    setDragState(dragState => ({
+      ...dragState,
+      dragCurrentCoordinates: getPlaneCoordinatesFromEvent(event),
+    }));
+  };
+
+  const mouseHandlerRef = useUpdatingRef(event => {
+    if (event.type === 'mousemove') {
+      onMouseMove(event);
+    } else if (event.type === 'mouseup') {
+      onMouseUp(event);
+    }
+  });
+
+  return mouseHandlerRef;
+};
+
+const useChildAddDeleteHandler = (
+  superOnShapeMountedOrUnmounted,
+  onSelectionChange,
+  selectedShapeIds,
+  selectionElRef
+) => {
+  const wrappedShapeActionRefsRef = useRef({});
+  const selectedChildrenDidChangeRef = useRef(false);
+  const forceUpdate = useForceUpdate();
+
+  useEffect(() => {
+    if (selectedChildrenDidChangeRef.current) {
+      selectedChildrenDidChangeRef.current = false;
 
       // Only force update if there is a selection visible.
       // Otherwise, no change
       if (
-        this.props.selectedShapeIds.filter(
-          shapeId => this.wrappedShapeActionRefs[shapeId]
+        selectedShapeIds.filter(
+          shapeId => wrappedShapeActionRefsRef.current[shapeId]
         ).length >= 2
       ) {
-        this.forceUpdate();
+        forceUpdate();
       }
     }
-  }
+  });
 
-  onChildFocus(shapeId, isInternalComponent) {
+  const onChildRectChanged = (shapeId, isInternalComponent) => {
     if (isInternalComponent) return;
 
-    const { selectedShapeIds, onSelectionChange } = this.props;
     if (
-      // We don't want to focus on the shape if it's already
-      // the only focused shape
-      selectedShapeIds.length !== 1 ||
-      selectedShapeIds[0] !== shapeId
-    ) {
-      onSelectionChange([shapeId]);
-    }
-  }
-
-  onChildRectChanged(shapeId, isInternalComponent) {
-    if (isInternalComponent) return;
-
-    const { selectedShapeIds } = this.props;
-    if (
-      !this.selectedChildrenDidChange &&
+      !selectedChildrenDidChangeRef.current &&
       selectedShapeIds.indexOf(shapeId) >= 0
     ) {
-      this.selectedChildrenDidChange = true;
+      selectedChildrenDidChangeRef.current = true;
     }
-  }
+  };
 
-  onChildToggleSelection(clickedShapeId, isInternalComponent, event) {
+  const onShapeMountedOrUnmounted = (shapeActionsRef, didMount) => {
+    // Call the original callback
+    superOnShapeMountedOrUnmounted(shapeActionsRef, didMount);
+    const { shapeId } = shapeActionsRef.current.props;
+    if (
+      !selectedChildrenDidChangeRef.current &&
+      selectedShapeIds.indexOf(shapeId) >= 0
+    ) {
+      selectedChildrenDidChangeRef.current = true;
+    }
+
+    if (didMount) {
+      wrappedShapeActionRefsRef.current[shapeId] = shapeActionsRef;
+    } else {
+      delete wrappedShapeActionRefsRef.current[shapeId];
+    }
+  };
+
+  const onChildToggleSelection = (
+    clickedShapeId,
+    isInternalComponent,
+    event
+  ) => {
     const isClickingSelection = clickedShapeId === SELECTION_COMPONENT_SHAPE_ID;
     if (isInternalComponent && !isClickingSelection) return;
 
@@ -220,7 +278,6 @@ class SelectionLayer extends Component {
       }
     }
 
-    const { selectedShapeIds, onSelectionChange } = this.props;
     const isAdd = selectedShapeIds.indexOf(targetShapeId) < 0;
     if (isAdd) {
       const nextSelectedShapeIds = [...selectedShapeIds, targetShapeId];
@@ -228,12 +285,12 @@ class SelectionLayer extends Component {
 
       if (nextSelectedShapeIds.length >= 2) {
         // Focus on the group selection rect when it is drawn
-        if (this.selectionEl) {
-          this.selectionEl.forceFocus();
+        if (selectionElRef.current) {
+          selectionElRef.current.forceFocus();
         } else {
           setTimeout(() => {
-            if (this.selectionEl) {
-              this.selectionEl.forceFocus();
+            if (selectionElRef.current) {
+              selectionElRef.current.forceFocus();
             }
           });
         }
@@ -242,90 +299,48 @@ class SelectionLayer extends Component {
       // Only deselect when it is a group selection
       onSelectionChange(selectedShapeIds.filter(id => id !== targetShapeId));
     }
-  }
+  };
 
-  onMouseUp() {
-    if (!this.state.isMouseDown) {
-      return;
-    }
+  const onChildFocus = (shapeId, isInternalComponent) => {
+    if (isInternalComponent) return;
 
-    if (!this.selectionIsLargeEnough()) {
-      this.setState(defaultDragState);
-      return;
-    }
-
-    const { dragStartCoordinates, dragCurrentCoordinates } = this.state;
-    const selectRect = getRectFromCornerCoordinates(
-      dragStartCoordinates,
-      dragCurrentCoordinates
-    );
-    const selectedShapeIds = Object.keys(this.wrappedShapeActionRefs).filter(
-      shapeId => {
-        const { x, y, width, height } = this.wrappedShapeActionRefs[
-          shapeId
-        ].current.props;
-
-        return (
-          x + width > selectRect.x &&
-          x < selectRect.x + selectRect.width &&
-          y + height > selectRect.y &&
-          y < selectRect.y + selectRect.height
-        );
-      }
-    );
-
-    this.setState(defaultDragState);
-    this.props.onSelectionChange(selectedShapeIds);
-    if (selectedShapeIds.length >= 2 && this.selectionEl) {
-      // Focus on the group selection rect when it is first drawn
-      this.selectionEl.forceFocus();
-    } else if (selectedShapeIds.length === 1) {
-      // In the event that a single shape is selected, give native focus to it as well
-      this.wrappedShapeActionRefs[selectedShapeIds[0]].current.forceFocus();
-    }
-  }
-
-  onMouseMove(event) {
-    if (!this.state.isMouseDown) {
-      return;
-    }
-
-    this.setState({
-      dragCurrentCoordinates: this.props.getPlaneCoordinatesFromEvent(event),
-    });
-  }
-
-  onSelectionShapeMountedOrUnmounted(shapeActionsRef, didMount) {
-    const { onShapeMountedOrUnmounted, selectedShapeIds } = this.props;
-
-    // Call the original callback
-    onShapeMountedOrUnmounted(shapeActionsRef, didMount);
-    const { shapeId } = shapeActionsRef.current.props;
     if (
-      !this.selectedChildrenDidChange &&
-      selectedShapeIds.indexOf(shapeId) >= 0
+      // We don't want to focus on the shape if it's already
+      // the only focused shape
+      selectedShapeIds.length !== 1 ||
+      selectedShapeIds[0] !== shapeId
     ) {
-      this.selectedChildrenDidChange = true;
+      onSelectionChange([shapeId]);
     }
+  };
 
-    if (didMount) {
-      this.wrappedShapeActionRefs[shapeId] = shapeActionsRef;
-    } else {
-      delete this.wrappedShapeActionRefs[shapeId];
-    }
-  }
+  return {
+    onChildFocus,
+    onChildRectChanged,
+    onChildToggleSelection,
+    onShapeMountedOrUnmounted,
+    wrappedShapeActionRefsRef,
+  };
+};
 
-  mouseHandler(event) {
-    if (event.type === 'mousemove') {
-      this.onMouseMove(event);
-    } else if (event.type === 'mouseup') {
-      this.onMouseUp(event);
-    }
-  }
+const SelectionLayer = ({
+  children,
+  keyboardTransformMultiplier,
+  onChange,
+  onDelete,
+  onSelectionChange,
+  selectedShapeIds,
+  SelectionComponent,
+  selectionComponentProps,
+  SelectionDrawComponent,
+  minimumDistanceForSelection,
+}) => {
+  const [
+    { isMouseDown, dragStartCoordinates, dragCurrentCoordinates },
+    setDragState,
+  ] = useState(defaultDragState);
 
-  selectionIsLargeEnough() {
-    const { minimumDistanceForSelection } = this.props;
-    const { dragStartCoordinates, dragCurrentCoordinates } = this.state;
+  const selectionIsLargeEnough = () => {
     const selectionRect = getRectFromCornerCoordinates(
       dragStartCoordinates,
       dragCurrentCoordinates
@@ -335,180 +350,192 @@ class SelectionLayer extends Component {
       selectionRect.width >= minimumDistanceForSelection ||
       selectionRect.height >= minimumDistanceForSelection
     );
-  }
+  };
 
-  render() {
-    const {
-      children,
+  const {
+    scale,
+    vectorHeight,
+    vectorWidth,
+    callbacks: {
       getPlaneCoordinatesFromEvent,
-      keyboardTransformMultiplier,
-      onChange,
-      onDelete,
-      onSelectionChange,
-      scale,
-      selectedShapeIds,
-      SelectionComponent,
-      selectionComponentProps,
-      SelectionDrawComponent,
       setMouseHandlerRef,
-      vectorHeight,
-      vectorWidth,
-    } = this.props;
-    const {
-      dragCurrentCoordinates,
-      dragStartCoordinates,
-      isMouseDown,
-    } = this.state;
+      onShapeMountedOrUnmounted: superOnShapeMountedOrUnmounted,
+    },
+  } = useRootContext();
 
-    const draggedRect = isMouseDown
-      ? getRectFromCornerCoordinates(
-          dragStartCoordinates,
-          dragCurrentCoordinates
-        )
-      : null;
+  const selectionElRef = useRef();
+  const {
+    onChildFocus,
+    onChildRectChanged,
+    onChildToggleSelection,
+    onShapeMountedOrUnmounted,
+    wrappedShapeActionRefsRef,
+  } = useChildAddDeleteHandler(
+    superOnShapeMountedOrUnmounted,
+    onSelectionChange,
+    selectedShapeIds,
+    selectionElRef
+  );
 
-    const selectedShapeActionRefs = selectedShapeIds
-      .map(shapeId => this.wrappedShapeActionRefs[shapeId])
-      .filter(Boolean);
+  const mouseHandlerRef = useMouseHandlerRef(
+    isMouseDown,
+    dragStartCoordinates,
+    dragCurrentCoordinates,
+    setDragState,
+    getPlaneCoordinatesFromEvent,
+    selectionElRef,
+    onSelectionChange,
+    wrappedShapeActionRefsRef,
+    selectionIsLargeEnough
+  );
 
-    let extra = null;
-    if (isMouseDown) {
-      if (this.selectionIsLargeEnough()) {
-        extra = (
-          <SelectionDrawComponent
-            shapeId="rse-internal-selection-draw-component"
-            disabled
-            height={draggedRect.height}
-            isInternalComponent
-            scale={scale}
-            width={draggedRect.width}
-            x={draggedRect.x}
-            y={draggedRect.y}
-          />
-        );
-      }
-    } else if (selectedShapeActionRefs.length >= 2) {
-      const selectionRect = getSelectionRect(
-        selectedShapeActionRefs.map(s => s.current.props)
-      );
+  const draggedRect = isMouseDown
+    ? getRectFromCornerCoordinates(dragStartCoordinates, dragCurrentCoordinates)
+    : null;
+
+  const selectedShapeActionRefs = selectedShapeIds
+    .map(shapeId => wrappedShapeActionRefsRef.current[shapeId])
+    .filter(Boolean);
+
+  let extra = null;
+  if (isMouseDown) {
+    if (selectionIsLargeEnough()) {
       extra = (
-        <SelectionComponent
-          keyboardTransformMultiplier={keyboardTransformMultiplier}
-          // eslint-disable-next-line react/jsx-props-no-spreading
-          {...selectionComponentProps}
-          shapeId={SELECTION_COMPONENT_SHAPE_ID}
+        <SelectionDrawComponent
+          shapeId="rse-internal-selection-draw-component"
+          disabled
+          height={draggedRect.height}
           isInternalComponent
-          ref={el => {
-            this.selectionEl = el;
-          }}
-          onIntermediateChange={intermediateRect => {
-            selectedShapeActionRefs.forEach(shapeActionRef => {
-              const {
-                constrainMove,
-                constrainResize,
-                x,
-                y,
-                width,
-                height,
-              } = shapeActionRef.current.props;
-
-              const tempRect = getNextRectOfSelectionChildConstrained(
-                selectionRect,
-                intermediateRect,
-                { x, y, width, height },
-                constrainMove,
-                constrainResize
-              );
-              shapeActionRef.current.simulateTransform(tempRect);
-            });
-          }}
-          onDelete={event => {
-            onDelete(
-              event,
-              selectedShapeActionRefs.map(
-                shapeActionRef => shapeActionRef.current.props
-              )
-            );
-          }}
-          onChange={nextSelectionRect => {
-            const nextRects = selectedShapeActionRefs.map(shapeActionRef => {
-              const {
-                constrainMove,
-                constrainResize,
-                x,
-                y,
-                width,
-                height,
-              } = shapeActionRef.current.props;
-
-              return getNextRectOfSelectionChildConstrained(
-                selectionRect,
-                nextSelectionRect,
-                { x, y, width, height },
-                constrainMove,
-                constrainResize
-              );
-            });
-
-            // Restore the shapes back to their original positions
-            selectedShapeActionRefs.forEach(s => {
-              s.current.simulateTransform(null);
-            });
-
-            onChange(
-              nextRects,
-              selectedShapeActionRefs.map(s => s.current.props)
-            );
-          }}
           scale={scale}
-          height={selectionRect.height}
-          width={selectionRect.width}
-          x={selectionRect.x}
-          y={selectionRect.y}
+          width={draggedRect.width}
+          x={draggedRect.x}
+          y={draggedRect.y}
         />
       );
     }
+  } else if (selectedShapeActionRefs.length >= 2) {
+    const selectionRect = getSelectionRect(
+      selectedShapeActionRefs.map(s => s.current.props)
+    );
+    extra = (
+      <SelectionComponent
+        keyboardTransformMultiplier={keyboardTransformMultiplier}
+        // eslint-disable-next-line react/jsx-props-no-spreading
+        {...selectionComponentProps}
+        shapeId={SELECTION_COMPONENT_SHAPE_ID}
+        isInternalComponent
+        ref={selectionElRef}
+        onIntermediateChange={intermediateRect => {
+          selectedShapeActionRefs.forEach(shapeActionRef => {
+            const {
+              constrainMove,
+              constrainResize,
+              x,
+              y,
+              width,
+              height,
+            } = shapeActionRef.current.props;
 
-    return (
-      <>
-        <rect
-          className="rse-selection-layer"
-          width={vectorWidth}
-          height={vectorHeight}
-          fill="transparent"
-          onMouseDown={event => {
-            const startCoordinates = getPlaneCoordinatesFromEvent(event);
-            setMouseHandlerRef({ current: this.mouseHandler });
-            this.setState({
-              dragStartCoordinates: startCoordinates,
-              dragCurrentCoordinates: startCoordinates,
-              isMouseDown: true,
-            });
-            onSelectionChange([]);
-          }}
-        />
-        <CallbacksProvider value={this.callbacks}>
-          <>
-            {children}
-            {extra}
-          </>
-        </CallbacksProvider>
-      </>
+            const tempRect = getNextRectOfSelectionChildConstrained(
+              selectionRect,
+              intermediateRect,
+              { x, y, width, height },
+              constrainMove,
+              constrainResize
+            );
+            shapeActionRef.current.simulateTransform(tempRect);
+          });
+        }}
+        onDelete={event => {
+          onDelete(
+            event,
+            selectedShapeActionRefs.map(
+              shapeActionRef => shapeActionRef.current.props
+            )
+          );
+        }}
+        onChange={nextSelectionRect => {
+          const nextRects = selectedShapeActionRefs.map(shapeActionRef => {
+            const {
+              constrainMove,
+              constrainResize,
+              x,
+              y,
+              width,
+              height,
+            } = shapeActionRef.current.props;
+
+            return getNextRectOfSelectionChildConstrained(
+              selectionRect,
+              nextSelectionRect,
+              { x, y, width, height },
+              constrainMove,
+              constrainResize
+            );
+          });
+
+          // Restore the shapes back to their original positions
+          selectedShapeActionRefs.forEach(s => {
+            s.current.simulateTransform(null);
+          });
+
+          onChange(
+            nextRects,
+            selectedShapeActionRefs.map(s => s.current.props)
+          );
+        }}
+        scale={scale}
+        height={selectionRect.height}
+        width={selectionRect.width}
+        x={selectionRect.x}
+        y={selectionRect.y}
+      />
     );
   }
-}
+
+  const upgradedCallbacksRef = useRef({});
+  upgradedCallbacksRef.current.getPlaneCoordinatesFromEvent = getPlaneCoordinatesFromEvent;
+  upgradedCallbacksRef.current.setMouseHandlerRef = setMouseHandlerRef;
+  upgradedCallbacksRef.current.onShapeMountedOrUnmounted = onShapeMountedOrUnmounted;
+  upgradedCallbacksRef.current.onChildToggleSelection = onChildToggleSelection;
+  upgradedCallbacksRef.current.onChildFocus = onChildFocus;
+  upgradedCallbacksRef.current.onChildRectChanged = onChildRectChanged;
+
+  return (
+    <>
+      <rect
+        className="rse-selection-layer"
+        width={vectorWidth}
+        height={vectorHeight}
+        fill="transparent"
+        onMouseDown={event => {
+          const startCoordinates = getPlaneCoordinatesFromEvent(event);
+          setMouseHandlerRef(mouseHandlerRef);
+          setDragState({
+            dragStartCoordinates: startCoordinates,
+            dragCurrentCoordinates: startCoordinates,
+            isMouseDown: true,
+          });
+          onSelectionChange([]);
+        }}
+      />
+      <CallbacksProvider value={upgradedCallbacksRef.current}>
+        <>
+          {children}
+          {extra}
+        </>
+      </CallbacksProvider>
+    </>
+  );
+};
 
 SelectionLayer.propTypes = {
-  callbacks: PropTypes.shape({}).isRequired,
   children: PropTypes.node,
-  getPlaneCoordinatesFromEvent: PropTypes.func.isRequired,
   keyboardTransformMultiplier: PropTypes.number,
   minimumDistanceForSelection: PropTypes.number,
   onChange: PropTypes.func,
   onDelete: PropTypes.func,
   onSelectionChange: PropTypes.func.isRequired,
-  onShapeMountedOrUnmounted: PropTypes.func.isRequired,
-  scale: PropTypes.number.isRequired,
   selectedShapeIds: PropTypes.arrayOf(PropTypes.string).isRequired,
   SelectionComponent: PropTypes.oneOfType([
     PropTypes.func,
@@ -519,9 +546,6 @@ SelectionLayer.propTypes = {
     PropTypes.func,
     PropTypes.shape({}),
   ]),
-  setMouseHandlerRef: PropTypes.func.isRequired,
-  vectorHeight: PropTypes.number.isRequired,
-  vectorWidth: PropTypes.number.isRequired,
 };
 
 SelectionLayer.defaultProps = {
@@ -535,4 +559,4 @@ SelectionLayer.defaultProps = {
   SelectionDrawComponent: DefaultSelectionDrawComponent,
 };
 
-export default withContext(SelectionLayer);
+export default SelectionLayer;

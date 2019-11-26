@@ -74,7 +74,7 @@ const EasyMode = ({
 }) => {
   const [items, setItems] = useState(
     [...new Array(initialItemCount)].map((_, index) => ({
-      id: String(index),
+      id: `id_${index}`,
       x: 20 * (index + 1),
       y: 50 * (index + 1),
       width: 50,

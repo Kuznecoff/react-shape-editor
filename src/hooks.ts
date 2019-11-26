@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useReducer } from 'react';
 
 export const useUpdatingRef = <T>(value: T): React.MutableRefObject<T> => {
   const ref = useRef(value);
@@ -17,4 +17,10 @@ export const useIsMountedRef = (): React.MutableRefObject<boolean> => {
   }, [isMountedRef]);
 
   return isMountedRef;
+};
+
+export const useForceUpdate = (): React.Dispatch<undefined> => {
+  const [ignored, forceUpdate] = useReducer(x => x + 1, 0);
+
+  return forceUpdate;
 };

@@ -346,14 +346,13 @@ const useMouseHandlerRef = (
     }
   };
 
-  const mouseHandlerRef = useRef(() => {});
-  mouseHandlerRef.current = event => {
+  const mouseHandlerRef = useUpdatingRef(event => {
     if (event.type === 'mousemove') {
       onMouseMove(event);
     } else if (event.type === 'mouseup') {
       onMouseUp();
     }
-  };
+  });
 
   return mouseHandlerRef;
 };
