@@ -1,3 +1,33 @@
+# Change Log
+
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+<a name="3.0.0"></a>
+# [3.0.0](https://github.com/fritz-c/react-shape-editor/compare/v2.6.1...v3.0.0) (2019-11-26)
+
+
+### Bug Fixes
+
+* don't trigger shape focus on initial editor mount ([1875ac5](https://github.com/fritz-c/react-shape-editor/commit/1875ac5))
+* make forced focusing work in IE11 ([dd57771](https://github.com/fritz-c/react-shape-editor/commit/dd57771))
+* make shift-click to select multiple shapes work again ([e8ce177](https://github.com/fritz-c/react-shape-editor/commit/e8ce177))
+
+
+### Chores
+
+* upgrade packages ([dea302b](https://github.com/fritz-c/react-shape-editor/commit/dea302b))
+
+
+### BREAKING CHANGES
+
+* peerDependencies react and react-dom set to ^16.12.0
+* shapes in children during the initial editor mount are
+no longer given focus, as they could potentially scroll the window when
+rendered offscreen. Use a ref prop in one of your shapes and manually
+focus it on mount if the original behavior is desired.
+
+
+
 # Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
