@@ -7,13 +7,14 @@ Basic yet flexible shape editor component
 **Other projects using react-shape-editor:**
 
 - [Bounding Box Labeler](https://fritz-c.github.io/bounding-box-labeler/) by [@fritz-c](https://github.com/fritz-c) ([source](https://github.com/fritz-c/bounding-box-labeler))
-- *(Submit a PR to add yours here!)*
+- _(Submit a PR to add yours here!)_
 
 **Note to prospective users and contributors**: This component is maintained as I see fit, which means _not maintained_ in most cases. My stance is that your fork is as good a base to create a great npm package as mine is (you can even namespace it like `@your-npm-id/react-shape-editor` if you want to leave a trail back to this project). Such is the freedom of open source.
 
 Please, before making a well-intentioned PR, create an issue to discuss the functionality/fixes you intend to add, and let's go from there. I will most likely not be adding more functionality, but I'm always interested in hearing ideas for improvements.
 
 ## Installation
+
 ```sh
 npm i react-shape-editor
 ```
@@ -21,7 +22,7 @@ npm i react-shape-editor
 ## Usage
 
 ```jsx
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ShapeEditor,
   ImageLayer,
@@ -42,77 +43,68 @@ const RectShape = wrapShape(({ width, height }) => (
 ));
 
 let idIterator = 1;
-export default class Editor extends React.Component {
-  constructor(props) {
-    super(props);
+const Editor = () => {
+  const [items, setItems] = useState([
+    { id: '1', x: 20, y: 50, width: 50, height: 25 },
+    { id: '2', x: 120, y: 0, width: 20, height: 75 },
+  ]);
 
-    this.state = {
-      items: [
-        { id: '1', x: 20, y: 50, width: 50, height: 25 },
-        { id: '2', x: 120, y: 0, width: 20, height: 75 },
-      ],
-      vectorWidth: 0,
-      vectorHeight: 0,
-    };
-  }
+  const [{ vectorHeight, vectorWidth }, setVectorDimensions] = useState({
+    vectorHeight: 0,
+    vectorWidth: 0,
+  });
 
-  render() {
-    const { items, vectorWidth, vectorHeight } = this.state;
+  return (
+    <div style={{ height: 400 }}>
+      <ShapeEditor vectorWidth={vectorWidth} vectorHeight={vectorHeight}>
+        <ImageLayer
+          src="https://raw.githubusercontent.com/fritz-c/react-shape-editor/d8661b46d07d832e316aacc906a0d603a3bb13a2/website/blank.png"
+          onLoad={({ naturalWidth, naturalHeight }) => {
+            setVectorDimensions({
+              vectorWidth: naturalWidth,
+              vectorHeight: naturalHeight,
+            });
+          }}
+        />
+        <DrawLayer
+          onAddShape={({ x, y, width, height }) => {
+            setItems(currentItems => [
+              ...currentItems,
+              { id: `id${idIterator}`, x, y, width, height },
+            ]);
+            idIterator += 1;
+          }}
+        />
+        {items.map((item, index) => {
+          const { id, height, width, x, y } = item;
+          return (
+            <RectShape
+              key={id}
+              shapeId={id}
+              height={height}
+              width={width}
+              x={x}
+              y={y}
+              onChange={newRect => {
+                setItems(currentItems =>
+                  arrayReplace(currentItems, index, {
+                    ...item,
+                    ...newRect,
+                  })
+                );
+              }}
+              onDelete={() => {
+                setItems(currentItems => arrayReplace(currentItems, index, []));
+              }}
+            />
+          );
+        })}
+      </ShapeEditor>
+    </div>
+  );
+};
 
-    return (
-      <div style={{ height: 400 }}>
-        <ShapeEditor vectorWidth={vectorWidth} vectorHeight={vectorHeight}>
-          <ImageLayer
-            src="https://raw.githubusercontent.com/fritz-c/react-shape-editor/d8661b46d07d832e316aacc906a0d603a3bb13a2/website/blank.png"
-            onLoad={({ naturalWidth, naturalHeight }) => {
-              this.setState({
-                vectorWidth: naturalWidth,
-                vectorHeight: naturalHeight,
-              });
-            }}
-          />
-          <DrawLayer
-            onAddShape={({ x, y, width, height }) => {
-              this.setState(state => ({
-                items: [
-                  ...state.items,
-                  { id: `id${idIterator}`, x, y, width, height },
-                ],
-              }));
-              idIterator += 1;
-            }}
-          />
-          {items.map((item, index) => {
-            const { id, height, width, x, y } = item;
-            return (
-              <RectShape
-                key={id}
-                shapeId={id}
-                height={height}
-                width={width}
-                x={x}
-                y={y}
-                onChange={newRect => {
-                  this.setState(state => ({
-                    items: arrayReplace(state.items, index, {
-                      ...item,
-                      ...newRect,
-                    }),
-                  }));
-                }}
-                onDelete={() => {
-                  this.setState(state => ({
-                    items: arrayReplace(state.items, index, []),
-                  }));
-                }}
-              />
-            );
-          })}
-        </ShapeEditor>
-      </div>
-    );
-  }
-}
+export default Editor;
 ```
 
 ## Components
@@ -241,22 +233,22 @@ Creates an invisible layer of the SVG that allows users to select shapes via mou
 
 ## Contributing
 
-After cloning the repository and running `npm install` inside, you can use the following commands to develop and build the project.
+After cloning the repository and running `yarn install` inside, you can use the following commands to develop and build the project.
 
 ```sh
 # Starts a dev server that hosts a demo page with the component.
-npm start
+yarn start
 
 # Runs the library tests
-npm test
+yarn test
 
 # Lints the code with eslint
-npm run lint
+yarn lint
 
 # Lints and builds the code, placing the result in the dist directory.
 # This build is necessary to reflect changes if you're
 #  `npm link`-ed to this repository from another local project.
-npm run build
+yarn build
 ```
 
 Pull requests are welcome!

@@ -5,9 +5,9 @@ import OvalShape from './OvalShape';
 import StarShape from './StarShape';
 import bgImage from './blank.png';
 
-// if (process.env.NODE_ENV !== 'production') {
-//   const { whyDidYouUpdate } = require('why-did-you-update');
-//   whyDidYouUpdate(React, {
+// if (process.env.NODE_ENV === 'development') {
+//   const whyDidYouRender = require('@welldone-software/why-did-you-render');
+//   whyDidYouRender(React, {
 //     // include: [/^wrapShape\(/],
 //   });
 // }
@@ -31,6 +31,7 @@ class App extends Component {
       scale: 0.75,
       items: [...new Array(100)].map((_, index) => ({
         id: String(index),
+        shapeTypeIndex: index,
         x: Math.random() * 1500,
         y: Math.random() * 1500,
         width: 150,
@@ -106,8 +107,9 @@ class App extends Component {
     const shapeChoices = [RectShape, OvalShape, StarShape];
 
     const shapes = items.map((item, index) => {
-      const { id, width, height, x, y, ...otherProps } = item;
-      const Shape = shapeChoices[index % shapeChoices.length];
+      const { id, shapeTypeIndex, width, height, x, y } = item;
+      const Shape = shapeChoices[shapeTypeIndex % shapeChoices.length];
+
       return (
         <Shape
           key={id}
@@ -120,6 +122,7 @@ class App extends Component {
           shapeId={id}
           shapeIndex={index}
           width={width}
+          // eslint-disable-next-line react/jsx-props-no-spreading
           {...(backgroundMode === 'select'
             ? {
                 active: !!selectedIdDict[id],
@@ -129,7 +132,6 @@ class App extends Component {
             : {})}
           x={x}
           y={y}
-          {...otherProps}
         />
       );
     });
@@ -223,16 +225,25 @@ class App extends Component {
                 constrainMove={this.constrainMove}
                 constrainResize={this.constrainResize}
                 DrawPreviewComponent={
-                  shapeChoices[items.length % shapeChoices.length]
+                  shapeChoices[iterator % shapeChoices.length]
                 }
                 onAddShape={({ x, y, width, height }) => {
-                  this.setState(state => ({
-                    items: [
-                      ...state.items,
-                      { id: `id${iterator}`, x, y, width, height },
-                    ],
-                  }));
-                  iterator += 1;
+                  this.setState(state => {
+                    iterator += 1;
+                    return {
+                      items: [
+                        ...state.items,
+                        {
+                          id: `id${iterator}`,
+                          shapeTypeIndex: iterator - 1,
+                          x,
+                          y,
+                          width,
+                          height,
+                        },
+                      ],
+                    };
+                  });
                 }}
               />
             )}

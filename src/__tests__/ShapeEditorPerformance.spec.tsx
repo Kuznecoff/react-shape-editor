@@ -1,6 +1,7 @@
-/* eslint-disable react/prop-types */
+/* eslint-disable react/jsx-props-no-spreading, react/prop-types */
+
 import React from 'react';
-import { mount } from 'enzyme';
+import ReactDOM from 'react-dom';
 import { withProfiler } from 'jest-react-profiler';
 import ShapeEditor from '../ShapeEditor';
 import SelectionLayer from '../SelectionLayer';
@@ -29,16 +30,14 @@ test('shapes are not re-rendered when their siblings change', () => {
   const Shape1 = wrapShape(InnerComponentProfiled1);
   const Shape2 = wrapShape(InnerComponentProfiled2);
 
-  const wrapper = mount(
-    // We wrap it with an ad-hoc component in order to allow setProps to affect
-    // InnerComponentProfiled2 props directly
-    React.createElement((extraProps = {}) => (
-      <ShapeEditorProfiled>
-        <Shape1 {...exampleShapeProps} />
-        <Shape2 {...exampleShapeProps} {...extraProps} />
-      </ShapeEditorProfiled>
-    ))
+  const SimpleExample = extraProps => (
+    <ShapeEditorProfiled>
+      <Shape1 {...exampleShapeProps} />
+      <Shape2 {...exampleShapeProps} {...extraProps} />
+    </ShapeEditorProfiled>
   );
+  const targetEl = document.createElement('div');
+  ReactDOM.render(<SimpleExample />, targetEl);
 
   // Check that each component's render function was called just once
   expect(ShapeEditorProfiled).toHaveCommittedTimes(1);
@@ -46,7 +45,7 @@ test('shapes are not re-rendered when their siblings change', () => {
   expect(InnerComponentProfiled2).toHaveCommittedTimes(1);
 
   // Triggering a re-render of InnerComponentProfiled2
-  wrapper.setProps({ width: 200 });
+  ReactDOM.render(<SimpleExample width={200} />, targetEl);
 
   // These check the number of extra commits since the last check
   // We want to make sure that InnerComponentProfiled1 didn't get re-rendered
@@ -55,20 +54,20 @@ test('shapes are not re-rendered when their siblings change', () => {
   expect(InnerComponentProfiled1).toHaveCommittedTimes(0); // Important
   expect(InnerComponentProfiled2).toHaveCommittedTimes(1);
 
-  // Do it again, but this time wrapped in a selection layer
-  const wrapper2 = mount(
-    React.createElement((extraProps = {}) => (
-      <ShapeEditorProfiled>
-        <SelectionLayerProfiled
-          onSelectionChange={() => {}}
-          selectedShapeIds={[]}
-        >
-          <Shape1 {...exampleShapeProps} />
-          <Shape2 {...exampleShapeProps} {...extraProps} />
-        </SelectionLayerProfiled>
-      </ShapeEditorProfiled>
-    ))
+  const SelectionLayerExample = extraProps => (
+    <ShapeEditorProfiled>
+      <SelectionLayerProfiled
+        onSelectionChange={() => {}}
+        selectedShapeIds={[]}
+      >
+        <Shape1 {...exampleShapeProps} />
+        <Shape2 {...exampleShapeProps} {...extraProps} />
+      </SelectionLayerProfiled>
+    </ShapeEditorProfiled>
   );
+
+  // Do it again, but this time wrapped in a selection layer
+  ReactDOM.render(<SelectionLayerExample />, targetEl);
 
   expect(ShapeEditorProfiled).toHaveCommittedTimes(1);
   expect(SelectionLayerProfiled).toHaveCommittedTimes(1);
@@ -76,7 +75,7 @@ test('shapes are not re-rendered when their siblings change', () => {
   expect(InnerComponentProfiled2).toHaveCommittedTimes(1);
 
   // Triggering a re-render of InnerComponentProfiled2
-  wrapper2.setProps({ width: 200 });
+  ReactDOM.render(<SelectionLayerExample width={200} />, targetEl);
 
   expect(ShapeEditorProfiled).toHaveCommittedTimes(1);
   expect(SelectionLayerProfiled).toHaveCommittedTimes(1);

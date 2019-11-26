@@ -1,162 +1,166 @@
-import React, { Component } from 'react';
+import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
+import {
+  CoordinateGetterRefProvider,
+  EventEmitterProvider,
+  ScaleProvider,
+  VectorHeightProvider,
+  VectorWidthProvider,
+} from './useRootContext.tsx';
+import { useIsMountedRef, useUpdatingRef } from './hooks.ts';
+import {
+  useNewEventEmitter,
+  useAdditionalListener,
+  EventType,
+} from './EventEmitter.ts';
 
-export const CallbacksContext = React.createContext({
-  getPlaneCoordinatesFromEvent: () => {},
-  onShapeMountedOrUnmounted: () => {},
-  setMouseHandler: () => {},
-});
-export const VectorHeightContext = React.createContext(0);
-export const VectorWidthContext = React.createContext(0);
-export const ScaleContext = React.createContext(1);
-
-class ShapeEditor extends Component {
-  constructor(props) {
-    super(props);
-
-    this.wrappedShapes = [];
-    this.justAddedShapes = [];
-
-    this.getPlaneCoordinatesFromEvent = this.getPlaneCoordinatesFromEvent.bind(
-      this
-    );
-    this.onMouseEvent = this.onMouseEvent.bind(this);
-    this.onShapeMountedOrUnmounted = this.onShapeMountedOrUnmounted.bind(this);
-    this.setMouseHandler = this.setMouseHandler.bind(this);
-
-    this.callbacks = {
-      onShapeMountedOrUnmounted: this.onShapeMountedOrUnmounted,
-      getPlaneCoordinatesFromEvent: this.getPlaneCoordinatesFromEvent,
-      setMouseHandler: this.setMouseHandler,
+const useMouseEventForwarding = eventEmitter => {
+  useEffect(() => {
+    const onMouseEvent = event => {
+      eventEmitter.emit(EventType.MouseEvent, event);
     };
-  }
 
-  componentDidMount() {
-    window.addEventListener('mouseup', this.onMouseEvent);
-    window.addEventListener('mousemove', this.onMouseEvent);
-  }
+    window.addEventListener('mouseup', onMouseEvent);
+    window.addEventListener('mousemove', onMouseEvent);
 
-  componentDidUpdate() {
-    if (this.justAddedShapes.length > 0 && this.props.focusOnAdd) {
+    return () => {
+      window.removeEventListener('mouseup', onMouseEvent);
+      window.removeEventListener('mousemove', onMouseEvent);
+    };
+  }, [eventEmitter]);
+};
+
+const useChildAddDeleteHandler = (focusOnAdd, focusOnDelete) => {
+  const justAddedShapeActionRefsRef = useRef([]);
+  const wrappedShapeActionRefsRef = useRef([]);
+  const lastDeletedRectRef = useRef();
+
+  useEffect(() => {
+    if (justAddedShapeActionRefsRef.current.length > 0 && focusOnAdd) {
       // Focus on shapes added since the last update
-      this.justAddedShapes.slice(-1)[0].forceFocus();
-    } else if (this.lastDeletedRect && this.props.focusOnDelete) {
+      justAddedShapeActionRefsRef.current.slice(-1)[0].current.forceFocus();
+    } else if (lastDeletedRectRef.current && focusOnDelete) {
       // If something was deleted since the last update, focus on the
       // next closest shape by center coordinates
       const getShapeCenter = shape => ({
         x: shape.x + shape.width / 2,
         y: shape.y + shape.height / 2,
       });
-      const deletedShapeCenter = getShapeCenter(this.lastDeletedRect);
+      const deletedShapeCenter = getShapeCenter(lastDeletedRectRef.current);
 
       let closestDistance = Math.MAX_SAFE_INTEGER || 2 ** 53 - 1;
-      let closestShape = null;
-      this.wrappedShapes.forEach(shape => {
-        const shapeCenter = getShapeCenter(shape.props);
+      let closestShapeActions = null;
+      wrappedShapeActionRefsRef.current.forEach(shapeActionRef => {
+        const shapeCenter = getShapeCenter(shapeActionRef.current.props);
         const distance =
           (deletedShapeCenter.x - shapeCenter.x) ** 2 +
           (deletedShapeCenter.y - shapeCenter.y) ** 2;
         if (distance < closestDistance) {
           closestDistance = distance;
-          closestShape = shape;
+          closestShapeActions = shapeActionRef.current;
         }
       });
 
-      if (closestShape) {
-        closestShape.forceFocus();
+      if (closestShapeActions) {
+        closestShapeActions.forceFocus();
       }
     }
 
-    this.justAddedShapes = [];
-    this.lastDeletedRect = null;
-  }
+    justAddedShapeActionRefsRef.current = [];
+    lastDeletedRectRef.current = null;
+  });
 
-  componentWillUnmount() {
-    window.removeEventListener('mouseup', this.onMouseEvent);
-    window.removeEventListener('mousemove', this.onMouseEvent);
+  const editorMountedRef = useIsMountedRef();
 
-    this.justAddedShapes = [];
-    this.wrappedShapes = [];
-    this.unmounted = true;
-  }
-
-  onMouseEvent(event) {
-    if (typeof this.mouseHandler === 'function') {
-      this.mouseHandler(event);
-    }
-  }
-
-  onShapeMountedOrUnmounted(instance, didMount) {
+  const onShapeMountedOrUnmounted = (shapeActionsRef, didMount) => {
     if (didMount) {
-      this.justAddedShapes = [...this.justAddedShapes, instance];
-      this.wrappedShapes = [...this.wrappedShapes, instance];
+      // Only monitor shapes added after the initial editor render
+      if (editorMountedRef.current) {
+        justAddedShapeActionRefsRef.current = [
+          ...justAddedShapeActionRefsRef.current,
+          shapeActionsRef,
+        ];
+      }
+
+      wrappedShapeActionRefsRef.current = [
+        ...wrappedShapeActionRefsRef.current,
+        shapeActionsRef,
+      ];
     } else {
-      this.lastDeletedRect = {
-        x: instance.props.x,
-        y: instance.props.y,
-        width: instance.props.width,
-        height: instance.props.height,
-      };
-      this.wrappedShapes = this.wrappedShapes.filter(s => s !== instance);
+      const { x, y, width, height } = shapeActionsRef.current.props;
+      lastDeletedRectRef.current = { x, y, width, height };
+      wrappedShapeActionRefsRef.current = wrappedShapeActionRefsRef.current.filter(
+        s => s !== shapeActionsRef
+      );
     }
-  }
+  };
 
-  setMouseHandler(mouseHandler) {
-    this.mouseHandler = mouseHandler;
-  }
+  return onShapeMountedOrUnmounted;
+};
 
-  getPlaneCoordinatesFromEvent(event, { x: offsetX = 0, y: offsetY = 0 } = {}) {
-    const { scale } = this.props;
-    const { top, left } = this.svgEl.getBoundingClientRect();
+const ShapeEditor = ({
+  children,
+  focusOnAdd,
+  focusOnDelete,
+  scale,
+  vectorHeight,
+  vectorWidth,
+  style,
+  ...otherProps
+}) => {
+  const svgElRef = useRef();
+  const getPlaneCoordinatesFromEventRef = useUpdatingRef(
+    (event, { x: offsetX = 0, y: offsetY = 0 } = {}) => {
+      const { top, left } = svgElRef.current.getBoundingClientRect();
 
-    return {
-      x: (event.clientX - left) / scale - offsetX,
-      y: (event.clientY - top) / scale - offsetY,
-    };
-  }
+      return {
+        x: (event.clientX - left) / scale - offsetX,
+        y: (event.clientY - top) / scale - offsetY,
+      };
+    }
+  );
 
-  render() {
-    const {
-      children,
-      focusOnAdd,
-      focusOnDelete,
-      scale,
-      vectorHeight,
-      vectorWidth,
-      style,
-      ...otherProps
-    } = this.props;
+  const onShapeMountedOrUnmounted = useChildAddDeleteHandler(
+    focusOnAdd,
+    focusOnDelete
+  );
 
-    return (
-      <svg
-        className="rse-plane-container"
-        width={vectorWidth * scale}
-        height={vectorHeight * scale}
-        viewBox={`0 0 ${vectorWidth} ${vectorHeight}`}
-        ref={el => {
-          this.svgEl = el;
-        }}
-        style={{
-          userSelect: 'none',
-          ...style,
-        }}
-        // IE11 - prevent all elements from being focusable by default
-        focusable={false}
-        {...otherProps}
-      >
-        <CallbacksContext.Provider value={this.callbacks}>
-          <VectorHeightContext.Provider value={vectorHeight}>
-            <VectorWidthContext.Provider value={vectorWidth}>
-              <ScaleContext.Provider value={scale}>
-                {children}
-              </ScaleContext.Provider>
-            </VectorWidthContext.Provider>
-          </VectorHeightContext.Provider>
-        </CallbacksContext.Provider>
-      </svg>
-    );
-  }
-}
+  const eventEmitter = useNewEventEmitter();
+  useMouseEventForwarding(eventEmitter);
+  useAdditionalListener(
+    eventEmitter,
+    EventType.MountedOrUnmounted,
+    onShapeMountedOrUnmounted
+  );
+
+  return (
+    <svg
+      className="rse-plane-container"
+      width={vectorWidth * scale}
+      height={vectorHeight * scale}
+      viewBox={`0 0 ${vectorWidth} ${vectorHeight}`}
+      ref={svgElRef}
+      style={{
+        userSelect: 'none',
+        ...style,
+      }}
+      // IE11 - prevent all elements from being focusable by default
+      focusable={false}
+      // eslint-disable-next-line react/jsx-props-no-spreading
+      {...otherProps}
+    >
+      <CoordinateGetterRefProvider value={getPlaneCoordinatesFromEventRef}>
+        <EventEmitterProvider value={eventEmitter}>
+          <VectorHeightProvider value={vectorHeight}>
+            <VectorWidthProvider value={vectorWidth}>
+              <ScaleProvider value={scale}>{children}</ScaleProvider>
+            </VectorWidthProvider>
+          </VectorHeightProvider>
+        </EventEmitterProvider>
+      </CoordinateGetterRefProvider>
+    </svg>
+  );
+};
 
 ShapeEditor.propTypes = {
   children: PropTypes.node,
