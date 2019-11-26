@@ -2,6 +2,9 @@ import React from 'react';
 import { render, fireEvent, EasyMode } from '../testUtils';
 import { Rectangle } from '../types';
 
+const SHAPE_TID = 'shape-rect';
+const SELECTION_TID = 'selection-rect';
+
 const mouseDrag = (el, { dx, dy }) => {
   fireEvent.mouseDown(el, { clientX: 0, clientY: 0 });
   fireEvent.mouseMove(el, { clientX: dx, clientY: dy });
@@ -9,46 +12,134 @@ const mouseDrag = (el, { dx, dy }) => {
 };
 
 const expectRect = (shape: HTMLElement, rect: Rectangle) => {
-  expect(shape.parentNode).toHaveAttribute(
-    'transform',
-    `translate(${rect.x},${rect.y})`
+  const [, xString, yString] =
+    ((shape.parentNode as Element).getAttribute('transform') as string).match(
+      /^translate\(([^,]+),([^)]+)\)$/
+    ) || [];
+  expect(parseFloat(xString)).toBeCloseTo(rect.x);
+  expect(parseFloat(yString)).toBeCloseTo(rect.y);
+  expect(parseFloat(shape.getAttribute('width') as string)).toBeCloseTo(
+    rect.width
   );
-  expect(shape).toHaveAttribute('width', String(rect.width));
-  expect(shape).toHaveAttribute('height', String(rect.height));
+  expect(parseFloat(shape.getAttribute('height') as string)).toBeCloseTo(
+    rect.height
+  );
+};
+
+const prepareSelection = () => {
+  const testFns = render(
+    <EasyMode includeSelectionLayer initialItemCount={3} />
+  );
+  const { container, getByTestId } = testFns;
+
+  const selectionLayer = container.querySelector('.rse-selection-layer');
+
+  // This range only selects 2 of the 3 rendered shapes (intentionally)
+  mouseDrag(selectionLayer, { dx: 130, dy: 130 });
+
+  return {
+    ...testFns,
+    selectionRect: getByTestId(SELECTION_TID),
+  };
 };
 
 it('can delete a shape with keyboard shortcut', () => {
   const { queryAllByTestId } = render(<EasyMode initialItemCount={2} />);
 
-  expect(queryAllByTestId('shape-rect')).toHaveLength(2);
-  fireEvent.keyDown(queryAllByTestId('shape-rect')[0], { key: 'Delete' });
-  expect(queryAllByTestId('shape-rect')).toHaveLength(1);
+  expect(queryAllByTestId(SHAPE_TID)).toHaveLength(2);
+  fireEvent.keyDown(queryAllByTestId(SHAPE_TID)[0], { key: 'Delete' });
+  expect(queryAllByTestId(SHAPE_TID)).toHaveLength(1);
 
   // Deleting will move the focus to the next shape
   expect(document.activeElement).toBe(
-    queryAllByTestId('shape-rect')[0].parentNode
+    queryAllByTestId(SHAPE_TID)[0].parentNode
   );
   fireEvent.keyDown(document.activeElement as Element, { key: 'Delete' });
-  expect(queryAllByTestId('shape-rect')).toHaveLength(0);
+  expect(queryAllByTestId(SHAPE_TID)).toHaveLength(0);
 
   // After deleting the last shape, focus returns to the default,
   // which I guess is the document body
   expect(document.activeElement).toBe(document.body);
 });
 
+it('can delete a selection of shapes with keyboard shortcut', () => {
+  const { queryAllByTestId, selectionRect } = prepareSelection();
+  expect(queryAllByTestId(SHAPE_TID)).toHaveLength(3);
+  fireEvent.keyDown(selectionRect, { key: 'Delete' });
+  expect(queryAllByTestId(SHAPE_TID)).toHaveLength(1);
+});
+
+it('can move a shape with keyboard shortcut', () => {
+  const { getByTestId } = render(<EasyMode />);
+
+  const shape = getByTestId(SHAPE_TID);
+  expectRect(shape, { x: 20, y: 50, height: 25, width: 50 });
+  fireEvent.keyDown(shape, { key: 'ArrowRight' });
+  expectRect(shape, { x: 21, y: 50, height: 25, width: 50 });
+  fireEvent.keyDown(shape, { key: 'ArrowDown' });
+  fireEvent.keyDown(shape, { key: 'ArrowDown' });
+  expectRect(shape, { x: 21, y: 52, height: 25, width: 50 });
+});
+
+it('can move a selection of shapes with keyboard shortcut', () => {
+  const { queryAllByTestId, selectionRect } = prepareSelection();
+  const shapes = queryAllByTestId(SHAPE_TID);
+  expectRect(shapes[0], { x: 20, y: 50, height: 25, width: 50 });
+  expectRect(shapes[1], { x: 40, y: 100, height: 25, width: 50 });
+  expectRect(shapes[2], { x: 60, y: 150, height: 25, width: 50 });
+
+  fireEvent.keyDown(selectionRect, { key: 'ArrowRight' });
+
+  expectRect(shapes[0], { x: 21, y: 50, height: 25, width: 50 });
+  expectRect(shapes[1], { x: 41, y: 100, height: 25, width: 50 });
+  expectRect(shapes[2], { x: 60, y: 150, height: 25, width: 50 });
+});
+
+it('can resize a shape with keyboard shortcut', () => {
+  const { getByTestId } = render(<EasyMode />);
+
+  const shape = getByTestId(SHAPE_TID);
+  expectRect(shape, { x: 20, y: 50, height: 25, width: 50 });
+  fireEvent.keyDown(shape, { key: 'ArrowRight', shiftKey: true });
+  expectRect(shape, { x: 20, y: 50, height: 25, width: 51 });
+  fireEvent.keyDown(shape, { key: 'ArrowLeft', shiftKey: true });
+  expectRect(shape, { x: 20, y: 50, height: 25, width: 50 });
+  fireEvent.keyDown(shape, { key: 'ArrowDown', shiftKey: true });
+  expectRect(shape, { x: 20, y: 50, height: 26, width: 50 });
+});
+
+it('can resize a selection of shapes with keyboard shortcut', () => {
+  const { queryAllByTestId, selectionRect } = prepareSelection();
+  const shapes = queryAllByTestId(SHAPE_TID);
+  expectRect(shapes[0], { x: 20, y: 50, height: 25, width: 50 });
+  expectRect(shapes[1], { x: 40, y: 100, height: 25, width: 50 });
+  expectRect(shapes[2], { x: 60, y: 150, height: 25, width: 50 });
+
+  fireEvent.keyDown(selectionRect, { key: 'ArrowUp', shiftKey: true });
+
+  expectRect(shapes[0], { x: 20, y: 50, height: 24.6666, width: 50 });
+  expectRect(shapes[1], { x: 40, y: 99.3333, height: 24.6666, width: 50 });
+  expectRect(shapes[2], { x: 60, y: 150, height: 25, width: 50 });
+});
+
+it.todo('can move a shape with the mouse');
+it.todo('can move a selection of shapes with the mouse');
+it.todo('can resize a selection of shapes with the mouse');
+it.todo('conforms to constraints');
+
 it('can create a shape', () => {
   const { getAllByTestId, container } = render(<EasyMode includeDrawLayer />);
 
-  expect(getAllByTestId('shape-rect')).toHaveLength(1);
+  expect(getAllByTestId(SHAPE_TID)).toHaveLength(1);
   const drawLayer = container.querySelector('.rse-draw-layer');
   mouseDrag(drawLayer, { dx: 30, dy: 30 });
-  expect(getAllByTestId('shape-rect')).toHaveLength(2);
+  expect(getAllByTestId(SHAPE_TID)).toHaveLength(2);
 });
 
-it('can resize a shape', () => {
+it('can resize a shape with the mouse', () => {
   const { getByTestId } = render(<EasyMode />);
 
-  const shape = getByTestId('shape-rect');
+  const shape = getByTestId(SHAPE_TID);
   expectRect(shape, { x: 20, y: 50, height: 25, width: 50 });
 
   const eResizeHandle = getByTestId('resize-handle-e');
@@ -65,12 +156,12 @@ it('can select multiple shapes by click-and-drag', () => {
     <EasyMode initialItemCount={2} includeSelectionLayer />
   );
 
-  expect(queryByTestId('selection-rect')).toBeNull();
+  expect(queryByTestId(SELECTION_TID)).toBeNull();
 
   const selectionLayer = container.querySelector('.rse-selection-layer');
   mouseDrag(selectionLayer, { dx: 130, dy: 130 });
 
-  expect(queryByTestId('selection-rect')).toBeTruthy();
+  expect(queryByTestId(SELECTION_TID)).toBeTruthy();
 });
 
 it('can select multiple shapes via shift-click', () => {
@@ -78,14 +169,14 @@ it('can select multiple shapes via shift-click', () => {
     <EasyMode initialItemCount={2} includeSelectionLayer />
   );
 
-  const shapes = getAllByTestId('shape-rect');
+  const shapes = getAllByTestId(SHAPE_TID);
 
   fireEvent.mouseDown(shapes[0]);
   fireEvent.mouseUp(shapes[0]);
-  expect(queryByTestId('selection-rect')).toBeNull();
+  expect(queryByTestId(SELECTION_TID)).toBeNull();
   expect(document.activeElement).toBe(shapes[0].parentNode);
 
   fireEvent.mouseDown(shapes[1], { shiftKey: true });
   fireEvent.mouseUp(shapes[1], { shiftKey: true });
-  expect(queryByTestId('selection-rect')).toBeTruthy();
+  expect(queryByTestId(SELECTION_TID)).toBeTruthy();
 });

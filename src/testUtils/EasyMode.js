@@ -95,6 +95,7 @@ const EasyMode = ({
       <RectShape
         key={id}
         shapeId={id}
+        shapeIndex={index}
         height={height}
         width={width}
         x={x}
@@ -148,7 +149,6 @@ const EasyMode = ({
             onSelectionChange={ids => {
               setSelectedShapeIds(ids);
             }}
-            keyboardTransformMultiplier={5}
             onChange={(newRects, selectedShapesProps) => {
               setItems(currentItems =>
                 newRects.reduce((acc, newRect, index) => {
