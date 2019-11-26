@@ -1,3 +1,5 @@
+export type ShapeId = string;
+
 export interface Point {
   readonly x: number;
   readonly y: number;
@@ -36,4 +38,10 @@ export interface ConstrainResizeFunc {
 
 export interface MouseHandlerFunc {
   (event: React.MouseEvent): void;
+}
+
+export interface ShapeActions {
+  props: object;
+  forceFocus: () => void;
+  simulateTransform: (nextRect: Rectangle) => void;
 }
