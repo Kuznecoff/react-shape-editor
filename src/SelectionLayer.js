@@ -508,7 +508,14 @@ const SelectionLayer = ({
   }
 
   return (
-    <>
+    <g
+      onMouseDown={() => {
+        // Clear the selection
+        if (selectedShapeIds.length > 0) {
+          onSelectionChange([]);
+        }
+      }}
+    >
       <rect
         className="rse-selection-layer"
         x={-vectorPaddingLeft}
@@ -527,13 +534,17 @@ const SelectionLayer = ({
             dragCurrentCoordinates: startCoordinates,
             isMouseDown: true,
           });
-          onSelectionChange([]);
+
+          // Clear the selection
+          if (selectedShapeIds.length > 0) {
+            onSelectionChange([]);
+          }
         }}
       />
 
       {children}
       {extra}
-    </>
+    </g>
   );
 };
 
