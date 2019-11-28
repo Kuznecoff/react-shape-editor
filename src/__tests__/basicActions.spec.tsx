@@ -5,7 +5,10 @@ import { Rectangle } from '../types';
 const SHAPE_TID = 'shape-rect';
 const SELECTION_TID = 'selection-rect';
 
-const mouseDrag = (el, { x = 0, y = 0, dx, dy }) => {
+const mouseDrag = (
+  el: Element,
+  { x = 0, y = 0, dx, dy }: { dx: number; dy: number; x?: number; y?: number }
+) => {
   fireEvent.mouseDown(el, { clientX: x, clientY: y });
   fireEvent.mouseMove(el, { clientX: x + dx, clientY: y + dy });
   fireEvent.mouseUp(el, { clientX: x + dx, clientY: y + dy });

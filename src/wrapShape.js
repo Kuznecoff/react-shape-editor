@@ -7,7 +7,7 @@ import {
   defaultConstrainMove,
   defaultConstrainResize,
 } from './utils.ts';
-import { useUpdatingRef } from './hooks.ts';
+import { useCancelModeOnEscapeKey, useUpdatingRef } from './hooks.ts';
 import { EventType } from './EventEmitter.ts';
 
 const getHandles = (
@@ -489,6 +489,8 @@ function wrapShape(WrappedComponent) {
       },
       setDragState,
     ] = useState(defaultDragState);
+
+    useCancelModeOnEscapeKey(isMouseDown, () => setDragState(defaultDragState));
 
     const shapeActions = useShapeActions(
       props,

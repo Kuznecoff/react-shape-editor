@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
   getRectFromCornerCoordinates,
@@ -14,7 +14,7 @@ import {
   Rectangle,
 } from './types';
 import { EventType } from './EventEmitter';
-import { useUpdatingRef } from './hooks';
+import { useCancelModeOnEscapeKey, useUpdatingRef } from './hooks';
 
 interface DragState {
   dragStartCoordinates: Point;
@@ -104,12 +104,12 @@ const DrawLayer: React.FunctionComponent<Props> = ({
     return { x, y };
   };
 
+  const resetDragState = () => setDragState(defaultDragState);
   const onMouseUp = () => {
     if (!isMouseDown) {
       return;
     }
 
-    const resetDragState = () => setDragState(defaultDragState);
     if (
       dragStartCoordinates.x === dragCurrentCoordinates.x ||
       dragStartCoordinates.y === dragCurrentCoordinates.y
@@ -145,6 +145,8 @@ const DrawLayer: React.FunctionComponent<Props> = ({
       onMouseUp();
     }
   });
+
+  useCancelModeOnEscapeKey(isMouseDown, resetDragState);
 
   const draggedRect = isMouseDown
     ? getRectFromCornerCoordinates(dragStartCoordinates, dragCurrentCoordinates)

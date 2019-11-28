@@ -24,3 +24,30 @@ export const useForceUpdate = (): React.Dispatch<undefined> => {
 
   return forceUpdate;
 };
+
+/**
+ * Triggers a cancel callback when the Escape key is pressed with a mode active
+ *
+ * @param isActive The mode is active
+ * @param cancel Callback to cancel out of the mode
+ */
+export const useCancelModeOnEscapeKey = (
+  isActive: boolean,
+  cancel: () => void
+) => {
+  useEffect(() => {
+    if (!isActive) return;
+
+    const doCancel = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        cancel();
+      }
+    };
+
+    window.addEventListener('keydown', doCancel);
+    return () => {
+      window.removeEventListener('keydown', doCancel);
+    };
+  }, [isActive, cancel]);
+};

@@ -4,7 +4,11 @@ import { getRectFromCornerCoordinates } from './utils.ts';
 import useRootContext from './useRootContext.tsx';
 import DefaultSelectionDrawComponent from './DefaultSelectionDrawComponent';
 import DefaultSelectionComponent from './DefaultSelectionComponent';
-import { useUpdatingRef, useForceUpdate } from './hooks.ts';
+import {
+  useCancelModeOnEscapeKey,
+  useForceUpdate,
+  useUpdatingRef,
+} from './hooks.ts';
 import { EventType, useAdditionalListener } from './EventEmitter.ts';
 
 const defaultDragState = {
@@ -349,6 +353,7 @@ const SelectionLayer = ({
     { isMouseDown, dragStartCoordinates, dragCurrentCoordinates },
     setDragState,
   ] = useState(defaultDragState);
+  useCancelModeOnEscapeKey(isMouseDown, () => setDragState(defaultDragState));
 
   const selectionIsLargeEnough = () => {
     const selectionRect = getRectFromCornerCoordinates(
