@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="3.1.0"></a>
+# [3.1.0](https://github.com/fritz-c/react-shape-editor/compare/v3.0.0...v3.1.0) (2019-11-28)
+
+
+### Features
+
+* add SVG padding prop to ShapeEditor ([f9b0955](https://github.com/fritz-c/react-shape-editor/commit/f9b0955))
+
+
+
 <a name="3.0.0"></a>
 # [3.0.0](https://github.com/fritz-c/react-shape-editor/compare/v2.6.1...v3.0.0) (2019-11-26)
 
