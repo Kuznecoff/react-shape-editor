@@ -125,7 +125,15 @@ it('can resize a selection of shapes with keyboard shortcut', () => {
   expectRect(shapes[2], { x: 60, y: 150, height: 25, width: 50 });
 });
 
-it.todo('can move a shape with the mouse');
+it('can move a shape with the mouse', () => {
+  const { getByTestId } = render(<EasyMode />);
+
+  const shape = getByTestId(SHAPE_TID);
+  expectRect(shape, { x: 20, y: 50, height: 25, width: 50 });
+  mouseDrag(shape, { dx: 20, dy: 20 });
+  expectRect(shape, { x: 40, y: 70, height: 25, width: 50 });
+});
+
 it.todo('can move a selection of shapes with the mouse');
 it.todo('can resize a selection of shapes with the mouse');
 it.todo('conforms to constraints');
@@ -208,4 +216,58 @@ it('can select multiple shapes via shift-click', () => {
   fireEvent.mouseDown(shapes[1], { shiftKey: true });
   fireEvent.mouseUp(shapes[1], { shiftKey: true });
   expect(queryByTestId(SELECTION_TID)).toBeTruthy();
+});
+
+it('can cancel out of creating a shape with Escape key', () => {
+  const { getAllByTestId, container } = render(<EasyMode includeDrawLayer />);
+
+  expect(getAllByTestId(SHAPE_TID)).toHaveLength(1);
+
+  const drawLayer = container.querySelector('.rse-draw-layer');
+  fireEvent.mouseDown(drawLayer, { clientX: 0, clientY: 0 });
+  fireEvent.mouseMove(drawLayer, { clientX: 30, clientY: 30 });
+  fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+  fireEvent.mouseUp(drawLayer, { clientX: 30, clientY: 30 });
+  // Normally the shape creation would finish normally at this point
+  // and produce a shape, but the Escape key canceled it halfway through
+
+  expect(getAllByTestId(SHAPE_TID)).toHaveLength(1);
+});
+
+it('can cancel out of selecting shapes with Escape key', () => {
+  const { queryByTestId, container } = render(
+    <EasyMode includeSelectionLayer initialItemCount={3} />
+  );
+
+  const selectionLayer = container.querySelector('.rse-selection-layer');
+
+  mouseDrag(selectionLayer, { dx: 130, dy: 130 });
+  fireEvent.mouseDown(selectionLayer, { clientX: 0, clientY: 0 });
+  fireEvent.mouseMove(selectionLayer, { clientX: 130, clientY: 130 });
+  fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+  fireEvent.mouseUp(selectionLayer, { clientX: 130, clientY: 130 });
+
+  expect(queryByTestId(SELECTION_TID)).toBeNull();
+});
+
+it('can cancel out of resizing and moving shapes with Escape key', () => {
+  const { getByTestId } = render(<EasyMode />);
+
+  const shape = getByTestId(SHAPE_TID);
+  expectRect(shape, { x: 20, y: 50, height: 25, width: 50 });
+
+  const eResizeHandle = getByTestId('resize-handle-e');
+  fireEvent.mouseDown(eResizeHandle, { clientX: 0, clientY: 0 });
+  fireEvent.mouseMove(eResizeHandle, { clientX: 20, clientY: 20 });
+  fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+  fireEvent.mouseUp(eResizeHandle, { clientX: 20, clientY: 20 });
+
+  expectRect(shape, { x: 20, y: 50, height: 25, width: 50 });
+
+  fireEvent.mouseDown(shape, { clientX: 0, clientY: 0 });
+  fireEvent.mouseMove(shape, { clientX: 20, clientY: 20 });
+  fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+  fireEvent.mouseUp(shape, { clientX: 20, clientY: 20 });
+
+  expectRect(shape, { x: 20, y: 50, height: 25, width: 50 });
 });
