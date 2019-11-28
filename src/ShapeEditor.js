@@ -3,9 +3,7 @@ import PropTypes from 'prop-types';
 import {
   CoordinateGetterRefProvider,
   EventEmitterProvider,
-  ScaleProvider,
-  VectorHeightProvider,
-  VectorWidthProvider,
+  DimensionsProvider,
 } from './useRootContext.tsx';
 import { useIsMountedRef, useUpdatingRef } from './hooks.ts';
 import {
@@ -103,19 +101,41 @@ const ShapeEditor = ({
   focusOnAdd,
   focusOnDelete,
   scale,
+  style,
   vectorHeight,
   vectorWidth,
-  style,
+  padding,
   ...otherProps
 }) => {
+  const {
+    top: paddingTop,
+    right: paddingRight,
+    bottom: paddingBottom,
+    left: paddingLeft,
+  } =
+    typeof padding === 'number'
+      ? {
+          top: padding,
+          right: padding,
+          bottom: padding,
+          left: padding,
+        }
+      : {
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+          ...padding,
+        };
+
   const svgElRef = useRef();
   const getPlaneCoordinatesFromEventRef = useUpdatingRef(
     (event, { x: offsetX = 0, y: offsetY = 0 } = {}) => {
       const { top, left } = svgElRef.current.getBoundingClientRect();
 
       return {
-        x: (event.clientX - left) / scale - offsetX,
-        y: (event.clientY - top) / scale - offsetY,
+        x: (event.clientX - left - paddingLeft) / scale - offsetX,
+        y: (event.clientY - top - paddingTop) / scale - offsetY,
       };
     }
   );
@@ -133,12 +153,23 @@ const ShapeEditor = ({
     onShapeMountedOrUnmounted
   );
 
+  const vectorPaddingTop = paddingTop / scale;
+  const vectorPaddingRight = paddingRight / scale;
+  const vectorPaddingBottom = paddingBottom / scale;
+  const vectorPaddingLeft = paddingLeft / scale;
+
   return (
     <svg
       className="rse-plane-container"
-      width={vectorWidth * scale}
-      height={vectorHeight * scale}
-      viewBox={`0 0 ${vectorWidth} ${vectorHeight}`}
+      width={vectorWidth * scale + paddingLeft + paddingRight}
+      height={vectorHeight * scale + paddingTop + paddingBottom}
+      preserveAspectRatio="xMinYMin"
+      viewBox={[
+        -vectorPaddingLeft,
+        -vectorPaddingTop,
+        vectorWidth + vectorPaddingLeft + vectorPaddingRight,
+        vectorHeight + vectorPaddingTop + vectorPaddingBottom,
+      ].join(' ')}
       ref={svgElRef}
       style={{
         userSelect: 'none',
@@ -151,11 +182,19 @@ const ShapeEditor = ({
     >
       <CoordinateGetterRefProvider value={getPlaneCoordinatesFromEventRef}>
         <EventEmitterProvider value={eventEmitter}>
-          <VectorHeightProvider value={vectorHeight}>
-            <VectorWidthProvider value={vectorWidth}>
-              <ScaleProvider value={scale}>{children}</ScaleProvider>
-            </VectorWidthProvider>
-          </VectorHeightProvider>
+          <DimensionsProvider
+            value={{
+              vectorWidth,
+              vectorHeight,
+              vectorPaddingTop,
+              vectorPaddingRight,
+              vectorPaddingBottom,
+              vectorPaddingLeft,
+              scale,
+            }}
+          >
+            {children}
+          </DimensionsProvider>
         </EventEmitterProvider>
       </CoordinateGetterRefProvider>
     </svg>
@@ -166,6 +205,15 @@ ShapeEditor.propTypes = {
   children: PropTypes.node,
   focusOnAdd: PropTypes.bool,
   focusOnDelete: PropTypes.bool,
+  padding: PropTypes.oneOfType([
+    PropTypes.number,
+    PropTypes.shape({
+      top: PropTypes.number,
+      right: PropTypes.number,
+      bottom: PropTypes.number,
+      left: PropTypes.number,
+    }),
+  ]),
   scale: PropTypes.number,
   style: PropTypes.shape({}),
   vectorHeight: PropTypes.number,
@@ -176,8 +224,10 @@ ShapeEditor.defaultProps = {
   children: null,
   focusOnAdd: true,
   focusOnDelete: true,
+  padding: 0,
   scale: 1,
   style: {},
+  // TODOv4: Remove vectorHeight/vectorWidth/children defaults, and make required
   vectorHeight: 0,
   vectorWidth: 0,
 };

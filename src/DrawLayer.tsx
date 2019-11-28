@@ -53,9 +53,15 @@ const DrawLayer: React.FunctionComponent<Props> = ({
   onAddShape,
 }) => {
   const {
-    scale,
-    vectorHeight,
-    vectorWidth,
+    dimensions: {
+      scale,
+      vectorHeight,
+      vectorPaddingBottom,
+      vectorPaddingLeft,
+      vectorPaddingRight,
+      vectorPaddingTop,
+      vectorWidth,
+    },
     eventEmitter,
     coordinateGetterRef,
   } = useRootContext();
@@ -148,8 +154,10 @@ const DrawLayer: React.FunctionComponent<Props> = ({
     <>
       <rect
         className="rse-draw-layer"
-        width={vectorWidth}
-        height={vectorHeight}
+        x={-vectorPaddingLeft}
+        y={-vectorPaddingTop}
+        width={vectorWidth + vectorPaddingLeft + vectorPaddingRight}
+        height={vectorHeight + vectorPaddingTop + vectorPaddingBottom}
         fill="transparent"
         onMouseDown={event => {
           const startCoordinates = getCoordinatesFromEvent(event, true);

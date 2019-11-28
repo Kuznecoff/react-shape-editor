@@ -466,7 +466,11 @@ function wrapShape(WrappedComponent) {
       y,
     } = props;
 
-    const { scale, coordinateGetterRef, eventEmitter } = useRootContext();
+    const {
+      dimensions: { scale },
+      coordinateGetterRef,
+      eventEmitter,
+    } = useRootContext();
 
     const wrapperElRef = useRef(null);
 

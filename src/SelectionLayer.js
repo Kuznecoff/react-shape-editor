@@ -363,9 +363,15 @@ const SelectionLayer = ({
   };
 
   const {
-    scale,
-    vectorHeight,
-    vectorWidth,
+    dimensions: {
+      scale,
+      vectorHeight,
+      vectorPaddingBottom,
+      vectorPaddingLeft,
+      vectorPaddingRight,
+      vectorPaddingTop,
+      vectorWidth,
+    },
     eventEmitter,
     coordinateGetterRef,
   } = useRootContext();
@@ -500,8 +506,10 @@ const SelectionLayer = ({
     <>
       <rect
         className="rse-selection-layer"
-        width={vectorWidth}
-        height={vectorHeight}
+        x={-vectorPaddingLeft}
+        y={-vectorPaddingTop}
+        width={vectorWidth + vectorPaddingLeft + vectorPaddingRight}
+        height={vectorHeight + vectorPaddingTop + vectorPaddingBottom}
         fill="transparent"
         onMouseDown={event => {
           const startCoordinates = coordinateGetterRef.current(event);
