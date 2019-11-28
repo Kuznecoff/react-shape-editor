@@ -1,11 +1,18 @@
 import { useEffect, useRef, useReducer } from 'react';
 
+/**
+ * Returns a ref that gets updated with the latest value on every render
+ */
 export const useUpdatingRef = <T>(value: T): React.MutableRefObject<T> => {
   const ref = useRef(value);
   ref.current = value;
   return ref;
 };
 
+/**
+ * Returns a ref telling whether the calling component has been mounted or not.
+ * Is false for the first render and unmount step.
+ */
 export const useIsMountedRef = (): React.MutableRefObject<boolean> => {
   const isMountedRef = useRef(false);
   useEffect(() => {
@@ -19,6 +26,9 @@ export const useIsMountedRef = (): React.MutableRefObject<boolean> => {
   return isMountedRef;
 };
 
+/**
+ * Returns a function to force-update a component
+ */
 export const useForceUpdate = (): React.Dispatch<undefined> => {
   const [ignored, forceUpdate] = useReducer(x => x + 1, 0);
 

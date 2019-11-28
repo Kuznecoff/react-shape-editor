@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { Point } from './types';
 import { useEventEmitterContext } from './EventEmitter';
+import { useIsMountedRef } from './hooks';
 
 type CoordinateGetterType = React.MutableRefObject<
   (event: React.MouseEvent | MouseEvent) => Point
@@ -35,12 +36,11 @@ export const DimensionsProvider: React.FunctionComponent<Props> = ({
   // trigger re-renders on every render of the parent
   // See: https://reactjs.org/docs/context.html#caveats
   const [dimensions, setDimensions] = useState(propDims);
-  const isFirstRun = useRef(true);
+  const isMountedRef = useIsMountedRef();
   useEffect(() => {
-    // Skip the first render of the component because the state
+    // Skip the mount/unmount step because the state
     // has already been initialized with the propDims
-    if (isFirstRun.current) {
-      isFirstRun.current = false;
+    if (!isMountedRef.current) {
       return;
     }
 
@@ -65,6 +65,9 @@ export const CoordinateGetterRefProvider = CoordinateGetterRefContext.Provider;
 
 export { EventEmitterProvider } from './EventEmitter';
 
+/**
+ * Access the root context values
+ */
 const useRootContext = () => {
   const coordinateGetterRef = useContext(CoordinateGetterRefContext);
   if (coordinateGetterRef === undefined) {
