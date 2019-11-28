@@ -5,10 +5,10 @@ import { Rectangle } from '../types';
 const SHAPE_TID = 'shape-rect';
 const SELECTION_TID = 'selection-rect';
 
-const mouseDrag = (el, { dx, dy }) => {
-  fireEvent.mouseDown(el, { clientX: 0, clientY: 0 });
-  fireEvent.mouseMove(el, { clientX: dx, clientY: dy });
-  fireEvent.mouseUp(el, { clientX: dx, clientY: dy });
+const mouseDrag = (el, { x = 0, y = 0, dx, dy }) => {
+  fireEvent.mouseDown(el, { clientX: x, clientY: y });
+  fireEvent.mouseMove(el, { clientX: x + dx, clientY: y + dy });
+  fireEvent.mouseUp(el, { clientX: x + dx, clientY: y + dy });
 };
 
 const expectRect = (shape: HTMLElement, rect: Rectangle) => {
@@ -131,9 +131,35 @@ it('can create a shape', () => {
   const { getAllByTestId, container } = render(<EasyMode includeDrawLayer />);
 
   expect(getAllByTestId(SHAPE_TID)).toHaveLength(1);
+
   const drawLayer = container.querySelector('.rse-draw-layer');
   mouseDrag(drawLayer, { dx: 30, dy: 30 });
   expect(getAllByTestId(SHAPE_TID)).toHaveLength(2);
+  expectRect(getAllByTestId(SHAPE_TID)[1], {
+    x: 0,
+    y: 0,
+    width: 30,
+    height: 30,
+  });
+});
+
+it('can create a shape in a padded, scaled svg', () => {
+  const padding = 50;
+  const { getAllByTestId, container } = render(
+    <EasyMode includeDrawLayer shapeEditorProps={{ padding, scale: 0.5 }} />
+  );
+
+  expect(getAllByTestId(SHAPE_TID)).toHaveLength(1);
+
+  const drawLayer = container.querySelector('.rse-draw-layer');
+  mouseDrag(drawLayer, { x: padding, y: padding, dx: 30, dy: 30 });
+  expect(getAllByTestId(SHAPE_TID)).toHaveLength(2);
+  expectRect(getAllByTestId(SHAPE_TID)[1], {
+    x: 0, // Originates at 0 despite starting at 50, thanks to padding
+    y: 0, // Originates at 0 despite starting at 50, thanks to padding
+    width: 60, // Twice the mouse drag distance due to scale
+    height: 60, // Twice the mouse drag distance due to scale
+  });
 });
 
 it('can resize a shape with the mouse', () => {

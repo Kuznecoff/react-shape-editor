@@ -1,3 +1,5 @@
+/* eslint-disable react/jsx-props-no-spreading */
+
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import {
@@ -71,6 +73,8 @@ const EasyMode = ({
   includeImageLayer,
   includeSelectionLayer,
   initialItemCount,
+  shapeEditorProps,
+  shapeProps,
 }) => {
   const [items, setItems] = useState(
     [...new Array(initialItemCount)].map((_, index) => ({
@@ -112,13 +116,18 @@ const EasyMode = ({
           setItems(currentItems => arrayReplace(currentItems, index, []));
         }}
         ResizeHandleComponent={ResizeHandleComponent}
+        {...shapeProps}
       />
     );
   });
 
   return (
     <div style={{ height: 400 }}>
-      <ShapeEditor vectorWidth={vectorWidth} vectorHeight={vectorHeight}>
+      <ShapeEditor
+        vectorWidth={vectorWidth}
+        vectorHeight={vectorHeight}
+        {...shapeEditorProps}
+      >
         {includeImageLayer && (
           <ImageLayer
             src="https://raw.githubusercontent.com/fritz-c/react-shape-editor/d8661b46d07d832e316aacc906a0d603a3bb13a2/website/blank.png"
@@ -192,6 +201,8 @@ EasyMode.propTypes = {
   includeImageLayer: PropTypes.bool,
   includeSelectionLayer: PropTypes.bool,
   initialItemCount: PropTypes.number,
+  shapeEditorProps: PropTypes.shape({}),
+  shapeProps: PropTypes.shape({}),
 };
 
 EasyMode.defaultProps = {
@@ -199,6 +210,8 @@ EasyMode.defaultProps = {
   includeImageLayer: false,
   includeSelectionLayer: false,
   initialItemCount: 1,
+  shapeEditorProps: {},
+  shapeProps: {},
 };
 
 export default EasyMode;
