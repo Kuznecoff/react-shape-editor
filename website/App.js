@@ -209,6 +209,7 @@ class App extends Component {
             scale={scale}
             vectorWidth={vectorWidth}
             vectorHeight={vectorHeight}
+            padding={5} // used to avoid clipping the resize handles
           >
             <ImageLayer
               src={bgImage}
