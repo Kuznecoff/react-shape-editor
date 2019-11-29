@@ -69,6 +69,7 @@ const SelectionComponent = wrapShape(({ height, scale, width }) => (
 
 let idIterator = 1;
 const EasyMode = ({
+  drawLayerProps,
   includeDrawLayer,
   includeImageLayer,
   includeSelectionLayer,
@@ -104,6 +105,7 @@ const EasyMode = ({
             ]);
             idIterator += 1;
           }}
+          {...drawLayerProps}
         />
       )}
 
@@ -201,6 +203,7 @@ const EasyMode = ({
 };
 
 EasyMode.propTypes = {
+  drawLayerProps: PropTypes.shape({}),
   includeDrawLayer: PropTypes.bool,
   includeImageLayer: PropTypes.bool,
   includeSelectionLayer: PropTypes.bool,
@@ -210,6 +213,7 @@ EasyMode.propTypes = {
 };
 
 EasyMode.defaultProps = {
+  drawLayerProps: {},
   includeDrawLayer: false,
   includeImageLayer: false,
   includeSelectionLayer: false,

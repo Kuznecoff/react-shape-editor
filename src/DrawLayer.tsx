@@ -110,21 +110,19 @@ const DrawLayer: React.FunctionComponent<Props> = ({
       return;
     }
 
-    if (
-      dragStartCoordinates.x === dragCurrentCoordinates.x ||
-      dragStartCoordinates.y === dragCurrentCoordinates.y
-    ) {
-      resetDragState();
-      return;
-    }
-
     const newRect = getRectFromCornerCoordinates(
       dragStartCoordinates,
       dragCurrentCoordinates
     );
 
     resetDragState();
-    onAddShape(newRect);
+
+    if (
+      dragStartCoordinates.x !== dragCurrentCoordinates.x &&
+      dragStartCoordinates.y !== dragCurrentCoordinates.y
+    ) {
+      onAddShape(newRect);
+    }
   };
 
   const onMouseMove = (event: MouseEvent) => {

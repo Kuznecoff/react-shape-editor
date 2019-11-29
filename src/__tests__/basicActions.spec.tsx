@@ -7,10 +7,17 @@ const SELECTION_TID = 'selection-rect';
 
 const mouseDrag = (
   el: Element,
-  { x = 0, y = 0, dx, dy }: { dx: number; dy: number; x?: number; y?: number }
+  {
+    x = 0,
+    y = 0,
+    dx,
+    dy,
+    midDragCb = () => {},
+  }: { dx: number; dy: number; x?: number; y?: number; midDragCb?: () => void }
 ) => {
   fireEvent.mouseDown(el, { clientX: x, clientY: y });
   fireEvent.mouseMove(el, { clientX: x + dx, clientY: y + dy });
+  midDragCb();
   fireEvent.mouseUp(el, { clientX: x + dx, clientY: y + dy });
 };
 
@@ -246,10 +253,12 @@ it('can cancel out of creating a shape with Escape key', () => {
   expect(getAllByTestId(SHAPE_TID)).toHaveLength(1);
 
   const drawLayer = container.querySelector('.rse-draw-layer');
-  fireEvent.mouseDown(drawLayer, { clientX: 0, clientY: 0 });
-  fireEvent.mouseMove(drawLayer, { clientX: 30, clientY: 30 });
-  fireEvent.keyDown(document.activeElement, { key: 'Escape' });
-  fireEvent.mouseUp(drawLayer, { clientX: 30, clientY: 30 });
+  mouseDrag(drawLayer, {
+    dx: 30,
+    dy: 30,
+    midDragCb: () =>
+      fireEvent.keyDown(document.activeElement, { key: 'Escape' }),
+  });
   // Normally the shape creation would finish normally at this point
   // and produce a shape, but the Escape key canceled it halfway through
 
@@ -263,11 +272,12 @@ it('can cancel out of selecting shapes with Escape key', () => {
 
   const selectionLayer = container.querySelector('.rse-selection-layer');
 
-  mouseDrag(selectionLayer, { dx: 130, dy: 130 });
-  fireEvent.mouseDown(selectionLayer, { clientX: 0, clientY: 0 });
-  fireEvent.mouseMove(selectionLayer, { clientX: 130, clientY: 130 });
-  fireEvent.keyDown(document.activeElement, { key: 'Escape' });
-  fireEvent.mouseUp(selectionLayer, { clientX: 130, clientY: 130 });
+  mouseDrag(selectionLayer, {
+    dx: 130,
+    dy: 130,
+    midDragCb: () =>
+      fireEvent.keyDown(document.activeElement, { key: 'Escape' }),
+  });
 
   expect(queryByTestId(SELECTION_TID)).toBeNull();
 });
@@ -279,17 +289,21 @@ it('can cancel out of resizing and moving shapes with Escape key', () => {
   expectRect(shape, { x: 20, y: 50, height: 25, width: 50 });
 
   const eResizeHandle = getByTestId('resize-handle-e');
-  fireEvent.mouseDown(eResizeHandle, { clientX: 0, clientY: 0 });
-  fireEvent.mouseMove(eResizeHandle, { clientX: 20, clientY: 20 });
-  fireEvent.keyDown(document.activeElement, { key: 'Escape' });
-  fireEvent.mouseUp(eResizeHandle, { clientX: 20, clientY: 20 });
+  mouseDrag(eResizeHandle, {
+    dx: 20,
+    dy: 20,
+    midDragCb: () =>
+      fireEvent.keyDown(document.activeElement, { key: 'Escape' }),
+  });
 
   expectRect(shape, { x: 20, y: 50, height: 25, width: 50 });
 
-  fireEvent.mouseDown(shape, { clientX: 0, clientY: 0 });
-  fireEvent.mouseMove(shape, { clientX: 20, clientY: 20 });
-  fireEvent.keyDown(document.activeElement, { key: 'Escape' });
-  fireEvent.mouseUp(shape, { clientX: 20, clientY: 20 });
+  mouseDrag(shape, {
+    dx: 20,
+    dy: 20,
+    midDragCb: () =>
+      fireEvent.keyDown(document.activeElement, { key: 'Escape' }),
+  });
 
   expectRect(shape, { x: 20, y: 50, height: 25, width: 50 });
 });
