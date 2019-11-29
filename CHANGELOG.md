@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="3.2.1"></a>
+## [3.2.1](https://github.com/fritz-c/react-shape-editor/compare/v3.2.0...v3.2.1) (2019-11-29)
+
+
+### Bug Fixes
+
+* selection clears if child elements receive mouseDown and propagate ([ce7c8b6](https://github.com/fritz-c/react-shape-editor/commit/ce7c8b6))
+
+
+
 <a name="3.2.0"></a>
 # [3.2.0](https://github.com/fritz-c/react-shape-editor/compare/v3.1.0...v3.2.0) (2019-11-28)
 
