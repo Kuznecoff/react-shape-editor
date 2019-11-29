@@ -93,33 +93,49 @@ const EasyMode = ({
     vectorWidth: 0,
   });
 
-  const shapes = items.map((item, index) => {
-    const { id, height, width, x, y } = item;
-    return (
-      <RectShape
-        key={id}
-        shapeId={id}
-        shapeIndex={index}
-        height={height}
-        width={width}
-        x={x}
-        y={y}
-        onChange={newRect => {
-          setItems(currentItems =>
-            arrayReplace(currentItems, index, {
-              ...item,
-              ...newRect,
-            })
-          );
-        }}
-        onDelete={() => {
-          setItems(currentItems => arrayReplace(currentItems, index, []));
-        }}
-        ResizeHandleComponent={ResizeHandleComponent}
-        {...shapeProps}
-      />
-    );
-  });
+  const extraLayersAndShapes = (
+    <>
+      {includeDrawLayer && (
+        <DrawLayer
+          onAddShape={({ x, y, width, height }) => {
+            setItems(currentItems => [
+              ...currentItems,
+              { id: `id${idIterator}`, x, y, width, height },
+            ]);
+            idIterator += 1;
+          }}
+        />
+      )}
+
+      {items.map((item, index) => {
+        const { id, height, width, x, y } = item;
+        return (
+          <RectShape
+            key={id}
+            shapeId={id}
+            shapeIndex={index}
+            height={height}
+            width={width}
+            x={x}
+            y={y}
+            onChange={newRect => {
+              setItems(currentItems =>
+                arrayReplace(currentItems, index, {
+                  ...item,
+                  ...newRect,
+                })
+              );
+            }}
+            onDelete={() => {
+              setItems(currentItems => arrayReplace(currentItems, index, []));
+            }}
+            ResizeHandleComponent={ResizeHandleComponent}
+            {...shapeProps}
+          />
+        );
+      })}
+    </>
+  );
 
   return (
     <div style={{ height: 400 }}>
@@ -136,18 +152,6 @@ const EasyMode = ({
                 vectorWidth: naturalWidth,
                 vectorHeight: naturalHeight,
               });
-            }}
-          />
-        )}
-
-        {includeDrawLayer && (
-          <DrawLayer
-            onAddShape={({ x, y, width, height }) => {
-              setItems(currentItems => [
-                ...currentItems,
-                { id: `id${idIterator}`, x, y, width, height },
-              ]);
-              idIterator += 1;
             }}
           />
         )}
@@ -186,10 +190,10 @@ const EasyMode = ({
             }}
             SelectionComponent={SelectionComponent}
           >
-            {shapes}
+            {extraLayersAndShapes}
           </SelectionLayer>
         ) : (
-          shapes
+          extraLayersAndShapes
         )}
       </ShapeEditor>
     </div>
