@@ -5,35 +5,39 @@ export interface Point {
   readonly y: number;
 }
 
-export interface Rectangle extends Point {
-  readonly width: number;
-  readonly height: number;
-}
-
-export interface ConstrainMoveFuncArgs {
+export interface Rectangle {
   readonly x: number;
   readonly y: number;
   readonly width: number;
   readonly height: number;
-  readonly originalX: number;
-  readonly originalY: number;
-  readonly vectorWidth: number;
-  readonly vectorHeight: number;
-}
-export interface ConstrainMoveFunc {
-  (args: ConstrainMoveFuncArgs): Point;
 }
 
-export interface ConstrainResizeFuncArgs {
-  readonly originalMovingCorner: Point;
-  readonly startCorner: Point;
-  readonly movingCorner: Point;
-  readonly lockedDimension: 'x' | 'y' | null;
-  readonly vectorWidth: number;
-  readonly vectorHeight: number;
+export interface ConstrainMoveFunc {
+  (
+    args: Readonly<{
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      originalX: number;
+      originalY: number;
+      vectorWidth: number;
+      vectorHeight: number;
+    }>
+  ): Point;
 }
+
 export interface ConstrainResizeFunc {
-  (args: ConstrainResizeFuncArgs): Point;
+  (
+    args: Readonly<{
+      originalMovingCorner: Point;
+      startCorner: Point;
+      movingCorner: Point;
+      lockedDimension: 'x' | 'y' | null;
+      vectorWidth: number;
+      vectorHeight: number;
+    }>
+  ): Point;
 }
 
 export interface ShapeActions {
