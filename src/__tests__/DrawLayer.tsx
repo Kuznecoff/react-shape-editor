@@ -61,3 +61,80 @@ it('can cancel out of creating a shape with Escape key', () => {
 
   expect(getAllByTestId(SHAPE_TID)).toHaveLength(1);
 });
+
+it('calls onDrawStart, onDraw, onDrawEnd, onAddShape when creating a shape', () => {
+  const onDrawStart = jest.fn();
+  const onDraw = jest.fn();
+  const onDrawEnd = jest.fn();
+  const onAddShape = jest.fn();
+  const { container } = render(
+    <EasyMode
+      includeDrawLayer
+      drawLayerProps={{ onDrawStart, onDraw, onDrawEnd, onAddShape }}
+    />
+  );
+
+  const expectCallCounts = (
+    start: number,
+    mid: number,
+    end: number,
+    add: number
+  ) => {
+    expect(onDrawStart).toHaveBeenCalledTimes(start);
+    expect(onDraw).toHaveBeenCalledTimes(mid);
+    expect(onDrawEnd).toHaveBeenCalledTimes(end);
+    expect(onAddShape).toHaveBeenCalledTimes(add);
+  };
+
+  const drawLayer = getDrawLayer(container);
+
+  expectCallCounts(0, 0, 0, 0);
+
+  fireEvent.mouseDown(drawLayer, { clientX: 1, clientY: 2 });
+  expectCallCounts(1, 0, 0, 0);
+  expect(onDrawStart).toHaveBeenLastCalledWith({
+    startCorner: { x: 1, y: 2 },
+  });
+
+  fireEvent.mouseMove(drawLayer, { clientX: 29, clientY: 29 });
+  expectCallCounts(1, 1, 0, 0);
+  expect(onDraw).toHaveBeenLastCalledWith({
+    movingCorner: { x: 29, y: 29 },
+    startCorner: { x: 1, y: 2 },
+  });
+
+  fireEvent.mouseMove(drawLayer, { clientX: 30, clientY: 30 });
+  expectCallCounts(1, 2, 0, 0);
+
+  // In the onDrawEnd call, check that onAddShape has not been called yet
+  onDrawEnd.mockImplementationOnce(() => {
+    expectCallCounts(1, 2, 1, 0);
+  });
+
+  fireEvent.mouseUp(drawLayer, { clientX: 30, clientY: 30 });
+  expectCallCounts(1, 2, 1, 1);
+  expect(onDrawEnd).toHaveBeenLastCalledWith({
+    movingCorner: { x: 30, y: 30 },
+    startCorner: { x: 1, y: 2 },
+    canceled: false,
+  });
+  expect(onAddShape).toHaveBeenLastCalledWith({
+    height: 28,
+    width: 29,
+    x: 1,
+    y: 2,
+  });
+
+  // Simulate a canceled draw
+  mouseDrag(drawLayer, {
+    dx: 30,
+    dy: 30,
+    midDragCb: () => fireEvent.keyDown(getActiveElement(), { key: 'Escape' }),
+  });
+
+  expect(onDrawEnd).toHaveBeenLastCalledWith({
+    movingCorner: { x: 30, y: 30 },
+    startCorner: { x: 0, y: 0 },
+    canceled: true,
+  });
+});
