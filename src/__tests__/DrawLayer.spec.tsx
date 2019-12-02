@@ -90,7 +90,7 @@ it('calls onDrawStart, onDraw, onDrawEnd, onAddShape when creating a shape', () 
 
   expectCallCounts(0, 0, 0, 0);
 
-  fireEvent.mouseDown(drawLayer, { clientX: 1, clientY: 2 });
+  fireEvent.mouseDown(drawLayer, { buttons: 1, clientX: 1, clientY: 2 });
   expectCallCounts(1, 0, 0, 0);
   expect(onDrawStart).toHaveBeenLastCalledWith({
     startCorner: { x: 1, y: 2 },
@@ -137,4 +137,29 @@ it('calls onDrawStart, onDraw, onDrawEnd, onAddShape when creating a shape', () 
     startCorner: { x: 0, y: 0 },
     canceled: true,
   });
+});
+
+it('does not respond to right-click-initiated editing', () => {
+  const onDrawStart = jest.fn();
+  const onDraw = jest.fn();
+  const onDrawEnd = jest.fn();
+  const onAddShape = jest.fn();
+  const { container } = render(
+    <EasyMode
+      includeDrawLayer
+      drawLayerProps={{ onDrawStart, onDraw, onDrawEnd, onAddShape }}
+    />
+  );
+
+  const drawLayer = getDrawLayer(container);
+
+  // buttons=2 indicates right click
+  fireEvent.mouseDown(drawLayer, { buttons: 2, clientX: 0, clientY: 0 });
+  fireEvent.mouseMove(drawLayer, { clientX: 30, clientY: 30 });
+  fireEvent.mouseUp(drawLayer, { clientX: 30, clientY: 30 });
+
+  expect(onDrawStart).toHaveBeenCalledTimes(0);
+  expect(onDraw).toHaveBeenCalledTimes(0);
+  expect(onDrawEnd).toHaveBeenCalledTimes(0);
+  expect(onAddShape).toHaveBeenCalledTimes(0);
 });

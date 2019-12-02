@@ -19,7 +19,7 @@ export const mouseDrag = (
     midDragCb = () => {},
   }: { dx: number; dy: number; x?: number; y?: number; midDragCb?: () => void }
 ) => {
-  fireEvent.mouseDown(el, { clientX: x, clientY: y });
+  fireEvent.mouseDown(el, { buttons: 1, clientX: x, clientY: y });
   fireEvent.mouseMove(el, { clientX: x + dx, clientY: y + dy });
   midDragCb();
   fireEvent.mouseUp(el, { clientX: x + dx, clientY: y + dy });

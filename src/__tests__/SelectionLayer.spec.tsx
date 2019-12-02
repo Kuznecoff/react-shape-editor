@@ -87,12 +87,12 @@ it('can select multiple shapes via shift-click', () => {
 
   const shapes = getAllByTestId(SHAPE_TID);
 
-  fireEvent.mouseDown(shapes[0]);
+  fireEvent.mouseDown(shapes[0], { buttons: 1 });
   fireEvent.mouseUp(shapes[0]);
   expect(queryByTestId(SELECTION_TID)).toBeNull();
   expect(getActiveElement()).toBe(shapes[0].parentNode);
 
-  fireEvent.mouseDown(shapes[1], { shiftKey: true });
+  fireEvent.mouseDown(shapes[1], { buttons: 1, shiftKey: true });
   fireEvent.mouseUp(shapes[1], { shiftKey: true });
   expect(queryByTestId(SELECTION_TID)).toBeTruthy();
 });
@@ -105,15 +105,15 @@ it('can clear selection when selection backing rect is obscured (by DrawLayer)',
   const shapes = getAllByTestId(SHAPE_TID);
 
   // Create a selection by shift-clicking shapes
-  fireEvent.mouseDown(shapes[0]);
+  fireEvent.mouseDown(shapes[0], { buttons: 1 });
   fireEvent.mouseUp(shapes[0]);
-  fireEvent.mouseDown(shapes[1], { shiftKey: true });
+  fireEvent.mouseDown(shapes[1], { buttons: 1, shiftKey: true });
   fireEvent.mouseUp(shapes[1], { shiftKey: true });
   expect(queryByTestId(SELECTION_TID)).toBeTruthy();
 
   // Clicking off of the selection, on the top-most layer (draw layer, in this case)
   const drawLayer = getDrawLayer(container);
-  fireEvent.mouseDown(drawLayer);
+  fireEvent.mouseDown(drawLayer, { buttons: 1 });
 
   // Check that the selection rect has disappeared
   expect(queryByTestId(SELECTION_TID)).toBeNull();
