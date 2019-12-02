@@ -12,7 +12,7 @@ const RectShape = ({ width, height, scale }) => {
       height={Math.max(0, height - strokeWidth)}
       x={strokeWidth / 2}
       y={strokeWidth / 2}
-      fill="rgba(100,100,255,1)"
+      fill="rgba(100,100,255,0.8)"
       stroke="rgba(0,0,0,1)"
       strokeWidth={strokeWidth}
     />

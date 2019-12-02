@@ -12,6 +12,19 @@ import bgImage from './blank.png';
 //   });
 // }
 
+const SHAPE_CHOICES = [
+  RectShape,
+  RectShape,
+  RectShape,
+  RectShape,
+  OvalShape,
+  RectShape,
+  RectShape,
+  RectShape,
+  RectShape,
+  StarShape,
+];
+
 let iterator = 0;
 
 function arrayReplace(arr, index, item) {
@@ -104,11 +117,9 @@ class App extends Component {
       return acc;
     }, {});
 
-    const shapeChoices = [RectShape, OvalShape, StarShape];
-
     const shapes = items.map((item, index) => {
       const { id, shapeTypeIndex, width, height, x, y } = item;
-      const Shape = shapeChoices[shapeTypeIndex % shapeChoices.length];
+      const Shape = SHAPE_CHOICES[shapeTypeIndex % SHAPE_CHOICES.length];
 
       return (
         <Shape
@@ -226,7 +237,7 @@ class App extends Component {
                 constrainMove={this.constrainMove}
                 constrainResize={this.constrainResize}
                 DrawPreviewComponent={
-                  shapeChoices[iterator % shapeChoices.length]
+                  SHAPE_CHOICES[iterator % SHAPE_CHOICES.length]
                 }
                 onAddShape={({ x, y, width, height }) => {
                   this.setState(state => {
