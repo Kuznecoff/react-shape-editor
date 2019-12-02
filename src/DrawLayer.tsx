@@ -201,6 +201,9 @@ const DrawLayer: React.FunctionComponent<Props> = ({
         height={vectorHeight + vectorPaddingTop + vectorPaddingBottom}
         fill="transparent"
         onMouseDown={event => {
+          // Ignore anything but left clicks
+          if (event.buttons !== 1) return;
+
           const startCoordinates = getCoordinatesFromEvent(event, true);
           eventEmitter.overwriteAllListenersOfType(
             EventType.MouseEvent,

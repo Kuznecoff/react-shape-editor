@@ -109,9 +109,7 @@ const useMouseHandlerRef = (
   selectionIsLargeEnough
 ) => {
   const onMouseUp = () => {
-    if (!isMouseDown) {
-      return;
-    }
+    if (!isMouseDown) return;
 
     if (!selectionIsLargeEnough()) {
       setDragState(defaultDragState);
@@ -152,9 +150,7 @@ const useMouseHandlerRef = (
   };
 
   const onMouseMove = event => {
-    if (!isMouseDown) {
-      return;
-    }
+    if (!isMouseDown) return;
 
     setDragState(dragState => ({
       ...dragState,
@@ -509,7 +505,10 @@ const SelectionLayer = ({
 
   return (
     <g
-      onMouseDown={() => {
+      onMouseDown={event => {
+        // Ignore anything but left clicks
+        if (event.buttons !== 1) return;
+
         // Clear the selection
         if (selectedShapeIds.length > 0) {
           onSelectionChange([]);
@@ -524,6 +523,9 @@ const SelectionLayer = ({
         height={vectorHeight + vectorPaddingTop + vectorPaddingBottom}
         fill="transparent"
         onMouseDown={event => {
+          // Ignore anything but left clicks
+          if (event.buttons !== 1) return;
+
           const startCoordinates = coordinateGetterRef.current(event);
           eventEmitter.overwriteAllListenersOfType(
             EventType.MouseEvent,

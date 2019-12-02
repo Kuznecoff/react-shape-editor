@@ -81,6 +81,9 @@ const getHandles = (
         isInSelectionGroup={isInSelectionGroup}
         name={handleName}
         onMouseDown={event => {
+          // Ignore anything but left clicks
+          if (event.buttons !== 1) return;
+
           event.stopPropagation();
 
           const { x: planeX, y: planeY } = coordinateGetterRef.current(event);
@@ -599,6 +602,9 @@ function wrapShape(WrappedComponent) {
           }
         }}
         onMouseDown={event => {
+          // Ignore anything but left clicks
+          if (event.buttons !== 1) return;
+
           event.stopPropagation();
 
           if (event.shiftKey) {
