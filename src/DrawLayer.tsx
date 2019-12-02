@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import {
   getRectFromCornerCoordinates,
@@ -34,6 +34,24 @@ interface Props {
   constrainResize?: ConstrainResizeFunc;
   DrawPreviewComponent?: any;
   onAddShape: (newRect: Rectangle) => void;
+  onDraw?: (
+    args: Readonly<{
+      startCorner: Point;
+      movingCorner: Point;
+    }>
+  ) => void;
+  onDrawEnd?: (
+    args: Readonly<{
+      startCorner: Point;
+      movingCorner: Point;
+      canceled: boolean;
+    }>
+  ) => void;
+  onDrawStart?: (
+    args: Readonly<{
+      startCorner: Point;
+    }>
+  ) => void;
 }
 
 const propTypes = {
@@ -44,13 +62,21 @@ const propTypes = {
     PropTypes.shape({}),
   ]),
   onAddShape: PropTypes.func.isRequired,
+  onDraw: PropTypes.func,
+  onDrawEnd: PropTypes.func,
+  onDrawStart: PropTypes.func,
 };
+
+const noop = () => {};
 
 const DrawLayer: React.FunctionComponent<Props> = ({
   DrawPreviewComponent = DefaultDrawPreviewComponent,
   constrainResize = defaultConstrainResize,
   constrainMove = defaultConstrainMove,
   onAddShape,
+  onDraw = noop,
+  onDrawEnd = noop,
+  onDrawStart = noop,
 }) => {
   const {
     dimensions: {
@@ -104,7 +130,16 @@ const DrawLayer: React.FunctionComponent<Props> = ({
     return { x, y };
   };
 
-  const resetDragState = () => setDragState(defaultDragState);
+  const endDragAndReset = (canceled = false) => {
+    setDragState(defaultDragState);
+
+    onDrawEnd({
+      startCorner: dragStartCoordinates,
+      movingCorner: dragCurrentCoordinates,
+      canceled,
+    });
+  };
+
   const onMouseUp = () => {
     if (!isMouseDown) {
       return;
@@ -115,7 +150,7 @@ const DrawLayer: React.FunctionComponent<Props> = ({
       dragCurrentCoordinates
     );
 
-    resetDragState();
+    endDragAndReset();
 
     if (
       dragStartCoordinates.x !== dragCurrentCoordinates.x &&
@@ -130,10 +165,16 @@ const DrawLayer: React.FunctionComponent<Props> = ({
       return;
     }
 
+    const currentCoordinates = getCoordinatesFromEvent(event);
     setDragState(prevDragState => ({
       ...prevDragState,
-      dragCurrentCoordinates: getCoordinatesFromEvent(event),
+      dragCurrentCoordinates: currentCoordinates,
     }));
+
+    onDraw({
+      startCorner: dragStartCoordinates,
+      movingCorner: currentCoordinates,
+    });
   };
 
   const mouseHandlerRef = useUpdatingRef((event: MouseEvent) => {
@@ -144,7 +185,7 @@ const DrawLayer: React.FunctionComponent<Props> = ({
     }
   });
 
-  useCancelModeOnEscapeKey(isMouseDown, resetDragState);
+  useCancelModeOnEscapeKey(isMouseDown, () => endDragAndReset(true));
 
   const draggedRect = isMouseDown
     ? getRectFromCornerCoordinates(dragStartCoordinates, dragCurrentCoordinates)
@@ -170,6 +211,8 @@ const DrawLayer: React.FunctionComponent<Props> = ({
             dragCurrentCoordinates: startCoordinates,
             isMouseDown: true,
           });
+
+          onDrawStart({ startCorner: startCoordinates });
         }}
       />
       {draggedRect && (
