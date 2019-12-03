@@ -54,12 +54,12 @@ class EventEmitter {
   }
 
   removeListener(eventType: EventType, fn: ListenerRef): EventEmitter {
-    let matchingListeners = this.listeners[eventType];
+    const matchingListeners = this.listeners[eventType];
     if (!matchingListeners) {
       return this;
     }
 
-    for (let i = matchingListeners.length; i > 0; i--) {
+    for (let i = matchingListeners.length; i > 0; i -= 1) {
       if (matchingListeners[i] === fn) {
         matchingListeners.splice(i, 1);
         break;
@@ -79,7 +79,7 @@ class EventEmitter {
   }
 
   emit(eventType: EventType, ...args: any[]): void {
-    let matchingListeners = this.listeners[eventType];
+    const matchingListeners = this.listeners[eventType];
     if (!matchingListeners) {
       return;
     }

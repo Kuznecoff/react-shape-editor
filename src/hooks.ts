@@ -30,7 +30,7 @@ export const useIsMountedRef = (): React.MutableRefObject<boolean> => {
  * Returns a function to force-update a component
  */
 export const useForceUpdate = (): React.Dispatch<undefined> => {
-  const [ignored, forceUpdate] = useReducer(x => x + 1, 0);
+  const [, forceUpdate] = useReducer(x => x + 1, 0);
 
   return forceUpdate;
 };
@@ -46,7 +46,7 @@ export const useCancelModeOnEscapeKey = (
   cancel: () => void
 ) => {
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) return undefined;
 
     const doCancel = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {

@@ -1,5 +1,5 @@
 import React, { useState, FunctionComponent, useEffect, useRef } from 'react';
-import PropTypes, { string } from 'prop-types';
+import PropTypes from 'prop-types';
 
 interface ImageDimensions {
   readonly naturalHeight: number;

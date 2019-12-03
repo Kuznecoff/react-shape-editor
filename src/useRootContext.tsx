@@ -1,4 +1,5 @@
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { Point } from './types';
 import { useEventEmitterContext } from './EventEmitter';
 import { useIsMountedRef } from './hooks';
@@ -11,7 +12,7 @@ const CoordinateGetterRefContext = React.createContext<
   CoordinateGetterType | undefined
 >(undefined);
 
-interface DimensionsType {
+type DimensionsType = Readonly<{
   vectorWidth: number;
   vectorHeight: number;
   vectorPaddingTop: number;
@@ -19,7 +20,8 @@ interface DimensionsType {
   vectorPaddingBottom: number;
   vectorPaddingLeft: number;
   scale: number;
-}
+}>;
+
 const DimensionsContext = React.createContext<DimensionsType | undefined>(
   undefined
 );
@@ -28,6 +30,18 @@ interface Props {
   value: DimensionsType;
   children: any;
 }
+const dimensionsProviderPropTypes = {
+  value: PropTypes.shape({
+    vectorWidth: PropTypes.number.isRequired,
+    vectorHeight: PropTypes.number.isRequired,
+    vectorPaddingTop: PropTypes.number.isRequired,
+    vectorPaddingRight: PropTypes.number.isRequired,
+    vectorPaddingBottom: PropTypes.number.isRequired,
+    vectorPaddingLeft: PropTypes.number.isRequired,
+    scale: PropTypes.number.isRequired,
+  }).isRequired,
+  children: PropTypes.node.isRequired,
+};
 export const DimensionsProvider: React.FunctionComponent<Props> = ({
   children,
   value: propDims,
@@ -61,6 +75,7 @@ export const DimensionsProvider: React.FunctionComponent<Props> = ({
     </DimensionsContext.Provider>
   );
 };
+DimensionsProvider.propTypes = dimensionsProviderPropTypes;
 export const CoordinateGetterRefProvider = CoordinateGetterRefContext.Provider;
 
 export { EventEmitterProvider } from './EventEmitter';
