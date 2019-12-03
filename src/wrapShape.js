@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle } from 'react';
 import PropTypes from 'prop-types';
 import DefaultResizeHandleComponent from './DefaultResizeHandleComponent';
 import useRootContext from './useRootContext.tsx';
@@ -158,7 +158,13 @@ const defaultDragState = {
   isDragToMove: true,
 };
 
-const useShapeActions = (props, nativeActive, wrapperElRef, setDragState) => {
+const useShapeActions = (
+  forwardedRef,
+  props,
+  nativeActive,
+  wrapperElRef,
+  setDragState
+) => {
   const simulatedTransformRef = useRef(null);
   const shapeActions = {
     props,
@@ -203,6 +209,13 @@ const useShapeActions = (props, nativeActive, wrapperElRef, setDragState) => {
       });
     },
   };
+
+  useImperativeHandle(forwardedRef, () => shapeActions, [
+    props,
+    nativeActive,
+    wrapperElRef,
+    setDragState,
+  ]);
 
   return shapeActions;
 };
@@ -496,18 +509,12 @@ function wrapShape(WrappedComponent) {
     useCancelModeOnEscapeKey(isMouseDown, () => setDragState(defaultDragState));
 
     const shapeActions = useShapeActions(
+      forwardedRef,
       props,
       nativeActive,
       wrapperElRef,
       setDragState
     );
-
-    if (typeof forwardedRef === 'function') {
-      forwardedRef(shapeActions);
-    } else if (forwardedRef && typeof forwardedRef === 'object') {
-      // eslint-disable-next-line no-param-reassign
-      forwardedRef.current = shapeActions;
-    }
 
     useNotifyRoot(
       eventEmitter,
