@@ -47,6 +47,8 @@ module.exports = {
         'no-undef': 'off',
         // Types will enforce the need to specify defaults
         'react/require-default-props': 'off',
+        // Allow triple slash comments
+        'spaced-comment': ['error', 'always', { markers: ['/'] }],
 
         // Add TypeScript specific rules (and turn off ESLint equivalents)
         '@typescript-eslint/consistent-type-assertions': 'warn',
