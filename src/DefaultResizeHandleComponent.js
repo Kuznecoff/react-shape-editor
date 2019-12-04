@@ -31,6 +31,7 @@ DefaultResizeHandleComponent.propTypes = {
   active: PropTypes.bool.isRequired,
   nativeActive: PropTypes.bool.isRequired,
   cursor: PropTypes.string.isRequired,
+  isBeingChanged: PropTypes.bool.isRequired,
   isInSelectionGroup: PropTypes.bool.isRequired,
   name: PropTypes.string.isRequired,
   onMouseDown: PropTypes.func.isRequired,

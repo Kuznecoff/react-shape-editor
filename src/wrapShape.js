@@ -20,7 +20,8 @@ const getHandles = (
   coordinateGetterRef,
   eventEmitter,
   mouseHandlerRef,
-  setDragState
+  setDragState,
+  isBeingChanged
 ) => {
   const currentWidth = sides.right - sides.left;
   const currentHeight = sides.bottom - sides.top;
@@ -78,6 +79,7 @@ const getHandles = (
         active={active}
         nativeActive={nativeActive}
         cursor={cursor}
+        isBeingChanged={isBeingChanged}
         isInSelectionGroup={isInSelectionGroup}
         name={handleName}
         onMouseDown={event => {
@@ -567,7 +569,8 @@ function wrapShape(WrappedComponent) {
       coordinateGetterRef,
       eventEmitter,
       mouseHandlerRef,
-      setDragState
+      setDragState,
+      isMouseDown
     );
 
     const shapeOnKeyDown = useOnKeyDown(props);
