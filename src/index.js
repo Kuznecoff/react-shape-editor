@@ -1,4 +1,4 @@
-import ShapeEditor from './ShapeEditor';
+import ShapeEditor from './ShapeEditor.tsx';
 import wrapShape from './wrapShape';
 import ImageLayer from './ImageLayer.tsx';
 import DrawLayer from './DrawLayer.tsx';

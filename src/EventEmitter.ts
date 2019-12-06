@@ -39,7 +39,7 @@ type CustomListener =
 
 type ListenerRef = React.MutableRefObject<Listener>;
 
-class EventEmitter {
+export class EventEmitter {
   private listeners: object;
 
   constructor() {

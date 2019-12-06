@@ -4,17 +4,19 @@ import {
   CoordinateGetterRefProvider,
   EventEmitterProvider,
   DimensionsProvider,
-} from './useRootContext.tsx';
-import { useIsMountedRef, useUpdatingRef } from './hooks.ts';
+} from './useRootContext';
+import { useIsMountedRef, useUpdatingRef } from './hooks';
 import {
   useNewEventEmitter,
   useAdditionalListener,
   EventType,
-} from './EventEmitter.ts';
+  EventEmitter,
+} from './EventEmitter';
+import { ShapeActions, Rectangle, Point } from './types';
 
-const useMouseEventForwarding = eventEmitter => {
+const useMouseEventForwarding = (eventEmitter: EventEmitter) => {
   useEffect(() => {
-    const onMouseEvent = event => {
+    const onMouseEvent = (event: MouseEvent) => {
       eventEmitter.emit(EventType.MouseEvent, event);
     };
 
@@ -28,10 +30,14 @@ const useMouseEventForwarding = eventEmitter => {
   }, [eventEmitter]);
 };
 
-const useChildAddDeleteHandler = (focusOnAdd, focusOnDelete) => {
-  const justAddedShapeActionRefsRef = useRef([]);
-  const wrappedShapeActionRefsRef = useRef([]);
-  const lastDeletedRectRef = useRef();
+const useChildAddDeleteHandler = (
+  focusOnAdd: boolean,
+  focusOnDelete: boolean
+) => {
+  type ShapeActionRef = React.MutableRefObject<ShapeActions>;
+  const justAddedShapeActionRefsRef = useRef([] as ShapeActionRef[]);
+  const wrappedShapeActionRefsRef = useRef([] as ShapeActionRef[]);
+  const lastDeletedRectRef = useRef(null as Rectangle | null);
 
   useEffect(() => {
     if (justAddedShapeActionRefsRef.current.length > 0 && focusOnAdd) {
@@ -40,14 +46,14 @@ const useChildAddDeleteHandler = (focusOnAdd, focusOnDelete) => {
     } else if (lastDeletedRectRef.current && focusOnDelete) {
       // If something was deleted since the last update, focus on the
       // next closest shape by center coordinates
-      const getShapeCenter = shape => ({
+      const getShapeCenter = (shape: Rectangle) => ({
         x: shape.x + shape.width / 2,
         y: shape.y + shape.height / 2,
       });
       const deletedShapeCenter = getShapeCenter(lastDeletedRectRef.current);
 
-      let closestDistance = Math.MAX_SAFE_INTEGER || 2 ** 53 - 1;
-      let closestShapeActions = null;
+      let closestDistance = 2 ** 53 - 1;
+      let closestShapeActions: ShapeActions | null = null;
       wrappedShapeActionRefsRef.current.forEach(shapeActionRef => {
         const shapeCenter = getShapeCenter(shapeActionRef.current.props);
         const distance =
@@ -59,8 +65,8 @@ const useChildAddDeleteHandler = (focusOnAdd, focusOnDelete) => {
         }
       });
 
-      if (closestShapeActions) {
-        closestShapeActions.forceFocus();
+      if (closestShapeActions !== null) {
+        (closestShapeActions as ShapeActions).forceFocus();
       }
     }
 
@@ -96,15 +102,47 @@ const useChildAddDeleteHandler = (focusOnAdd, focusOnDelete) => {
   return onShapeMountedOrUnmounted;
 };
 
-const ShapeEditor = ({
-  children,
-  focusOnAdd,
-  focusOnDelete,
-  scale,
-  style,
-  vectorHeight,
-  vectorWidth,
-  padding,
+interface Props {
+  children?: any;
+  focusOnAdd?: boolean;
+  focusOnDelete?: boolean;
+  padding?:
+    | number
+    | { top?: number; right?: number; bottom?: number; left?: number };
+  scale?: number;
+  style?: object;
+  // TODOv4: Remove vectorHeight/vectorWidth/children defaults, and make required
+  vectorHeight?: number;
+  vectorWidth?: number;
+}
+const propTypes = {
+  children: PropTypes.node,
+  focusOnAdd: PropTypes.bool,
+  focusOnDelete: PropTypes.bool,
+  padding: PropTypes.oneOfType([
+    PropTypes.number,
+    PropTypes.shape({
+      top: PropTypes.number,
+      right: PropTypes.number,
+      bottom: PropTypes.number,
+      left: PropTypes.number,
+    }),
+  ]),
+  scale: PropTypes.number,
+  style: PropTypes.shape({}),
+  vectorHeight: PropTypes.number,
+  vectorWidth: PropTypes.number,
+};
+
+const ShapeEditor: React.FunctionComponent<Props> = ({
+  children = null,
+  focusOnAdd = true,
+  focusOnDelete = true,
+  scale = 1,
+  style = {},
+  vectorHeight = 0,
+  vectorWidth = 0,
+  padding = 0,
   ...otherProps
 }) => {
   const {
@@ -128,9 +166,13 @@ const ShapeEditor = ({
           ...padding,
         };
 
-  const svgElRef = useRef();
+  const svgElRef = useRef<SVGSVGElement>(null);
   const getPlaneCoordinatesFromEventRef = useUpdatingRef(
-    (event, { x: offsetX = 0, y: offsetY = 0 } = {}) => {
+    (event: MouseEvent, { x: offsetX = 0, y: offsetY = 0 } = {}): Point => {
+      if (!svgElRef.current) {
+        return { x: 0, y: 0 };
+      }
+
       const { top, left } = svgElRef.current.getBoundingClientRect();
 
       return {
@@ -176,7 +218,7 @@ const ShapeEditor = ({
         ...style,
       }}
       // IE11 - prevent all elements from being focusable by default
-      focusable={false}
+      focusable="false"
       // eslint-disable-next-line react/jsx-props-no-spreading
       {...otherProps}
     >
@@ -201,35 +243,6 @@ const ShapeEditor = ({
   );
 };
 
-ShapeEditor.propTypes = {
-  children: PropTypes.node,
-  focusOnAdd: PropTypes.bool,
-  focusOnDelete: PropTypes.bool,
-  padding: PropTypes.oneOfType([
-    PropTypes.number,
-    PropTypes.shape({
-      top: PropTypes.number,
-      right: PropTypes.number,
-      bottom: PropTypes.number,
-      left: PropTypes.number,
-    }),
-  ]),
-  scale: PropTypes.number,
-  style: PropTypes.shape({}),
-  vectorHeight: PropTypes.number,
-  vectorWidth: PropTypes.number,
-};
-
-ShapeEditor.defaultProps = {
-  children: null,
-  focusOnAdd: true,
-  focusOnDelete: true,
-  padding: 0,
-  scale: 1,
-  style: {},
-  // TODOv4: Remove vectorHeight/vectorWidth/children defaults, and make required
-  vectorHeight: 0,
-  vectorWidth: 0,
-};
+ShapeEditor.propTypes = propTypes;
 
 export default ShapeEditor;

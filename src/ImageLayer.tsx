@@ -6,18 +6,7 @@ interface ImageDimensions {
   readonly naturalWidth: number;
 }
 
-interface ImageLoadCallback {
-  (dimensions: ImageDimensions): void;
-}
-
-interface ImageLayerProps {
-  onLoad?: ImageLoadCallback;
-  src: string;
-}
-const propTypes = {
-  onLoad: PropTypes.func,
-  src: PropTypes.string.isRequired,
-};
+type ImageLoadCallback = (dimensions: ImageDimensions) => void;
 
 const useImageLoader = (
   imageSrc: string,
@@ -60,7 +49,16 @@ const useImageLoader = (
   return { naturalHeight, naturalWidth };
 };
 
-const ImageLayer: FunctionComponent<ImageLayerProps> = ({
+interface Props {
+  onLoad?: ImageLoadCallback;
+  src: string;
+}
+const propTypes = {
+  onLoad: PropTypes.func,
+  src: PropTypes.string.isRequired,
+};
+
+const ImageLayer: FunctionComponent<Props> = ({
   onLoad = () => {},
   src,
   ...otherProps
