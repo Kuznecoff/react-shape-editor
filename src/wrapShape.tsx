@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState, useImperativeHandle } from 'react';
 import PropTypes from 'prop-types';
 import DefaultResizeHandleComponent from './DefaultResizeHandleComponent';
-import useRootContext from './useRootContext.tsx';
+import useRootContext from './useRootContext';
 import {
   getRectFromCornerCoordinates,
   defaultConstrainMove,
   defaultConstrainResize,
-} from './utils.ts';
-import { useCancelModeOnEscapeKey, useUpdatingRef } from './hooks.ts';
-import { EventType } from './EventEmitter.ts';
+} from './utils';
+import { useCancelModeOnEscapeKey, useUpdatingRef } from './hooks';
+import { EventType } from './EventEmitter';
 
 const getHandles = (
   ResizeHandleComponent,
