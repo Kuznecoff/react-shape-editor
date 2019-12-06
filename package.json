@@ -14,7 +14,7 @@
     "test": "jest --watch --notify --notifyMode=change",
     "test:once": "jest",
     "deploy": "gh-pages -d build",
-    "prepush-check-prettier": "npm run prettier -- --list-different || (echo 'ERROR: Some files were updated by prettier. Please commit them and continue.'; exit 1)"
+    "prettier-check": "npm run prettier -- --check --write=false"
   },
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
@@ -60,7 +60,7 @@
   "husky": {
     "hooks": {
       "commit-msg": "commitlint -e $HUSKY_GIT_PARAMS",
-      "pre-push": "npm-run-all -p prepush-check-prettier lint"
+      "pre-push": "npm-run-all -p prettier-check lint"
     }
   },
   "resolutions": {
