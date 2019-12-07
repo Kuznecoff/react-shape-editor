@@ -345,8 +345,8 @@ const useMouseHandlerRef = (
       );
 
       const coords = constrainMove({
-        originalX: dragCurrentCoordinates ? dragCurrentCoordinates.x : rawX,
-        originalY: dragCurrentCoordinates ? dragCurrentCoordinates.y : rawY,
+        originalX: dragCurrentCoordinates.x,
+        originalY: dragCurrentCoordinates.y,
         x: rawX,
         y: rawY,
         width,

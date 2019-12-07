@@ -29,10 +29,10 @@ export const useIsMountedRef = (): React.MutableRefObject<boolean> => {
 /**
  * Returns a function to force-update a component
  */
-export const useForceUpdate = (): React.Dispatch<undefined> => {
+export const useForceUpdate = () => {
   const [, forceUpdate] = useReducer(x => x + 1, 0);
 
-  return forceUpdate;
+  return forceUpdate as () => void;
 };
 
 /**
