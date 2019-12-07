@@ -54,10 +54,25 @@ export type WrappedShapeReceivedProps = {
   y: number;
 };
 
-type ResizeHandleComponent = any;
+type ResizeComponentHandleProps = {
+  active: boolean;
+  nativeActive: boolean;
+  cursor: ResizeCursor;
+  isBeingChanged: boolean;
+  isInSelectionGroup: boolean;
+  name: HandleName;
+  onMouseDown: (event: React.MouseEvent) => void;
+  recommendedSize: number;
+  scale: number;
+  x: number;
+  y: number;
+};
+export type ResizeHandleComponentType = React.ComponentType<
+  ResizeComponentHandleProps
+>;
 
 export type WrappedShapeProps = {
-  active?: boolean | null;
+  active?: boolean;
   constrainMove?: ConstrainMoveFunc;
   constrainResize?: ConstrainResizeFunc;
   disabled?: boolean;
@@ -65,13 +80,22 @@ export type WrappedShapeProps = {
   isInSelectionGroup?: boolean;
   isInternalComponent?: boolean;
   keyboardTransformMultiplier?: number;
-  onBlur?: (event: FocusEvent, props: WrappedShapePropsInActions) => void;
+  onBlur?: (event: React.FocusEvent, props: WrappedShapePropsInActions) => void;
   onChange?: (nextRect: Rectangle, props: WrappedShapePropsInActions) => void;
-  onDelete?: (event: KeyboardEvent, props: WrappedShapePropsInActions) => void;
-  onFocus?: (event: FocusEvent, props: WrappedShapePropsInActions) => void;
-  onKeyDown?: (event: KeyboardEvent, props: WrappedShapePropsInActions) => void;
+  onDelete?: (
+    event: React.KeyboardEvent,
+    props: WrappedShapePropsInActions
+  ) => void;
+  onFocus?: (
+    event: React.FocusEvent,
+    props: WrappedShapePropsInActions
+  ) => void;
+  onKeyDown?: (
+    event: React.KeyboardEvent,
+    props: WrappedShapePropsInActions
+  ) => void;
   onIntermediateChange?: (intermediateRect: Rectangle) => void;
-  ResizeHandleComponent?: ResizeHandleComponent;
+  ResizeHandleComponent?: ResizeHandleComponentType;
   shapeId: string;
   width: number;
   wrapperProps?: object;
@@ -79,10 +103,40 @@ export type WrappedShapeProps = {
   y: number;
 };
 
-export type WrappedShapePropsInActions = Required<WrappedShapeProps>;
+export type WrappedShapePropsInActions = Required<
+  Omit<
+    WrappedShapeProps,
+    | 'constrainMove'
+    | 'constrainResize'
+    | 'isInternalComponent'
+    | 'keyboardTransformMultiplier'
+    | 'onBlur'
+    | 'onChange'
+    | 'onDelete'
+    | 'onFocus'
+    | 'onIntermediateChange'
+    | 'onKeyDown'
+    | 'ResizeHandleComponent'
+    | 'wrapperProps'
+  >
+>;
+
+export type GetSelectionChildUpdatedRect = (
+  selectionStartRect: Rectangle,
+  selectionEndRect: Rectangle
+) => Rectangle;
 
 export interface ShapeActions {
   props: WrappedShapePropsInActions;
   forceFocus: () => void;
+  getSelectionChildUpdatedRect: GetSelectionChildUpdatedRect;
   simulateTransform: (nextRect: Rectangle) => void;
 }
+
+export type HandleName = 'w' | 'n' | 's' | 'e' | 'nw' | 'ne' | 'sw' | 'se';
+
+export type ResizeCursor =
+  | 'ns-resize'
+  | 'ew-resize'
+  | 'nesw-resize'
+  | 'nwse-resize';

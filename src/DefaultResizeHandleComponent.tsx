@@ -2,8 +2,37 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import { HandleName, ResizeCursor, ResizeHandleComponentType } from './types';
 
-const DefaultResizeHandleComponent = ({
+const propTypes = {
+  active: PropTypes.bool.isRequired,
+  nativeActive: PropTypes.bool.isRequired,
+  cursor: PropTypes.oneOf([
+    'ns-resize',
+    'ew-resize',
+    'nesw-resize',
+    'nwse-resize',
+  ] as ResizeCursor[]).isRequired,
+  isBeingChanged: PropTypes.bool.isRequired,
+  isInSelectionGroup: PropTypes.bool.isRequired,
+  name: PropTypes.oneOf([
+    'w',
+    'n',
+    's',
+    'e',
+    'nw',
+    'ne',
+    'sw',
+    'se',
+  ] as HandleName[]).isRequired,
+  onMouseDown: PropTypes.func.isRequired,
+  recommendedSize: PropTypes.number.isRequired,
+  scale: PropTypes.number.isRequired,
+  x: PropTypes.number.isRequired,
+  y: PropTypes.number.isRequired,
+};
+
+const DefaultResizeHandleComponent: ResizeHandleComponentType = ({
   active,
   cursor,
   isInSelectionGroup,
@@ -27,18 +56,6 @@ const DefaultResizeHandleComponent = ({
   />
 );
 
-DefaultResizeHandleComponent.propTypes = {
-  active: PropTypes.bool.isRequired,
-  nativeActive: PropTypes.bool.isRequired,
-  cursor: PropTypes.string.isRequired,
-  isBeingChanged: PropTypes.bool.isRequired,
-  isInSelectionGroup: PropTypes.bool.isRequired,
-  name: PropTypes.string.isRequired,
-  onMouseDown: PropTypes.func.isRequired,
-  recommendedSize: PropTypes.number.isRequired,
-  scale: PropTypes.number.isRequired,
-  x: PropTypes.number.isRequired,
-  y: PropTypes.number.isRequired,
-};
+DefaultResizeHandleComponent.propTypes = propTypes;
 
 export default DefaultResizeHandleComponent;

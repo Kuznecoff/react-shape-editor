@@ -23,3 +23,19 @@ export const defaultConstrainMove: ConstrainMoveFunc = ({ x, y }) => ({
 });
 export const defaultConstrainResize: ConstrainResizeFunc = ({ movingCorner }) =>
   movingCorner;
+
+export const forceFocus = (element: SVGElement | null): void => {
+  if (!element) return;
+
+  if (typeof element.focus === 'function') {
+    element.focus();
+  } else {
+    // IE11 doesn't have the focus method, so we use this hack from
+    // https://allyjs.io/tutorials/focusing-in-svg.html#focusing-svg-elements
+    try {
+      HTMLElement.prototype.focus.apply(element);
+    } catch (error) {
+      // silence the error
+    }
+  }
+};

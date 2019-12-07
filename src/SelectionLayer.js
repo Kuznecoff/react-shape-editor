@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { getRectFromCornerCoordinates } from './utils.ts';
 import useRootContext from './useRootContext.tsx';
-import DefaultSelectionDrawComponent from './DefaultSelectionDrawComponent';
-import DefaultSelectionComponent from './DefaultSelectionComponent';
+import DefaultSelectionDrawComponent from './DefaultSelectionDrawComponent.tsx';
+import DefaultSelectionComponent from './DefaultSelectionComponent.tsx';
 import {
   useCancelModeOnEscapeKey,
   useForceUpdate,
@@ -20,70 +20,6 @@ const defaultDragState = {
 export const SelectionContext = React.createContext(null);
 
 const SELECTION_COMPONENT_SHAPE_ID = 'rse-internal-selection-component';
-
-const getNextRectOfSelectionChild = (
-  selectionStartRect,
-  selectionEndRect,
-  childRect
-) => {
-  const scaleX =
-    selectionStartRect.width !== 0
-      ? selectionEndRect.width / selectionStartRect.width
-      : 0;
-  const scaleY =
-    selectionStartRect.height !== 0
-      ? selectionEndRect.height / selectionStartRect.height
-      : 0;
-
-  return {
-    x: selectionEndRect.x + (childRect.x - selectionStartRect.x) * scaleX,
-    y: selectionEndRect.y + (childRect.y - selectionStartRect.y) * scaleY,
-    width: scaleX !== 0 ? childRect.width * scaleX : selectionEndRect.width,
-    height: scaleY !== 0 ? childRect.height * scaleY : selectionEndRect.height,
-  };
-};
-
-const getNextRectOfSelectionChildConstrained = (
-  selectionStartRect,
-  selectionEndRect,
-  childRect,
-  constrainMove,
-  constrainResize
-) => {
-  const {
-    x: adjustedX,
-    y: adjustedY,
-    width: adjustedWidth,
-    height: adjustedHeight,
-  } = getNextRectOfSelectionChild(
-    selectionStartRect,
-    selectionEndRect,
-    childRect
-  );
-
-  const { x, y } = constrainMove({
-    originalX: childRect.x,
-    originalY: childRect.y,
-    x: adjustedX,
-    y: adjustedY,
-    width: adjustedWidth,
-    height: adjustedHeight,
-  });
-
-  const { x: right, y: bottom } = constrainResize({
-    originalMovingCorner: {
-      x: x + childRect.width,
-      y: y + childRect.height,
-    },
-    startCorner: { x, y },
-    movingCorner: {
-      x: x + adjustedWidth,
-      y: y + adjustedHeight,
-    },
-    lockedDimension: null,
-  });
-  return { x, y, width: right - x, height: bottom - y };
-};
 
 const getSelectionRect = childRects => {
   const selectionX = Math.min(...childRects.map(c => c.x));
@@ -437,21 +373,9 @@ const SelectionLayer = ({
         ref={selectionElRef}
         onIntermediateChange={intermediateRect => {
           selectedShapeActionRefs.forEach(shapeActionRef => {
-            const {
-              constrainMove,
-              constrainResize,
-              x,
-              y,
-              width,
-              height,
-            } = shapeActionRef.current.props;
-
-            const tempRect = getNextRectOfSelectionChildConstrained(
+            const tempRect = shapeActionRef.current.getSelectionChildUpdatedRect(
               selectionRect,
-              intermediateRect,
-              { x, y, width, height },
-              constrainMove,
-              constrainResize
+              intermediateRect
             );
             shapeActionRef.current.simulateTransform(tempRect);
           });
@@ -465,24 +389,12 @@ const SelectionLayer = ({
           );
         }}
         onChange={nextSelectionRect => {
-          const nextRects = selectedShapeActionRefs.map(shapeActionRef => {
-            const {
-              constrainMove,
-              constrainResize,
-              x,
-              y,
-              width,
-              height,
-            } = shapeActionRef.current.props;
-
-            return getNextRectOfSelectionChildConstrained(
+          const nextRects = selectedShapeActionRefs.map(shapeActionRef =>
+            shapeActionRef.current.getSelectionChildUpdatedRect(
               selectionRect,
-              nextSelectionRect,
-              { x, y, width, height },
-              constrainMove,
-              constrainResize
-            );
-          });
+              nextSelectionRect
+            )
+          );
 
           // Restore the shapes back to their original positions
           selectedShapeActionRefs.forEach(s => {

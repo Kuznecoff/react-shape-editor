@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState, useImperativeHandle } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useImperativeHandle,
+  useCallback,
+} from 'react';
 import PropTypes from 'prop-types';
 import DefaultResizeHandleComponent from './DefaultResizeHandleComponent';
 import useRootContext from './useRootContext';
@@ -6,22 +12,63 @@ import {
   getRectFromCornerCoordinates,
   defaultConstrainMove,
   defaultConstrainResize,
+  forceFocus,
 } from './utils';
 import { useCancelModeOnEscapeKey, useUpdatingRef } from './hooks';
-import { EventType } from './EventEmitter';
+import { EventType, EventEmitter } from './EventEmitter';
+import {
+  ConstrainMoveFunc,
+  ConstrainResizeFunc,
+  HandleName,
+  Point,
+  Rectangle,
+  ResizeCursor,
+  ShapeActions,
+  ShapeId,
+  WrappedShapeProps,
+  WrappedShapePropsInActions,
+  WrappedShapeReceivedProps,
+  GetSelectionChildUpdatedRect,
+} from './types';
+
+type Sides = {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+};
+
+type DragLock = 'x' | 'y' | null;
+
+type DragState = {
+  isMouseDown: boolean;
+  dragStartCoordinates: Point;
+  dragCurrentCoordinates: Point;
+  dragInnerOffset: Point;
+  dragLock: DragLock;
+  isDragToMove: boolean;
+};
+type SetDragState = React.Dispatch<React.SetStateAction<DragState>>;
+const defaultDragState: DragState = {
+  isMouseDown: false,
+  dragStartCoordinates: { x: 0, y: 0 },
+  dragCurrentCoordinates: { x: 0, y: 0 },
+  dragInnerOffset: { x: 0, y: 0 },
+  dragLock: null,
+  isDragToMove: true,
+};
 
 const getHandles = (
   ResizeHandleComponent,
-  sides,
-  scale,
-  active,
-  nativeActive,
-  isInSelectionGroup,
+  sides: Sides,
+  scale: number,
+  active: boolean,
+  nativeActive: boolean,
+  isInSelectionGroup: boolean,
   coordinateGetterRef,
-  eventEmitter,
-  mouseHandlerRef,
-  setDragState,
-  isBeingChanged
+  requestMouseHandler,
+  setDragState: SetDragState,
+  isBeingChanged: boolean
 ) => {
   const currentWidth = sides.right - sides.left;
   const currentHeight = sides.bottom - sides.top;
@@ -73,63 +120,69 @@ const getHandles = (
     ['se', 'se', 'nwse-resize', currentWidth, currentHeight, null],
   ]
     .filter(a => a)
-    .map(([handleName, movementReferenceCorner, cursor, x, y, dragLock]) => (
-      <ResizeHandleComponent
-        key={handleName}
-        active={active}
-        nativeActive={nativeActive}
-        cursor={cursor}
-        isBeingChanged={isBeingChanged}
-        isInSelectionGroup={isInSelectionGroup}
-        name={handleName}
-        onMouseDown={event => {
-          // Ignore anything but left clicks
-          if (event.buttons !== 1) return;
+    .map(
+      ([handleName, movementReferenceCorner, cursor, x, y, dragLock]: [
+        HandleName,
+        HandleName,
+        ResizeCursor,
+        number,
+        number,
+        DragLock
+      ]) => (
+        <ResizeHandleComponent
+          key={handleName}
+          active={active}
+          nativeActive={nativeActive}
+          cursor={cursor}
+          isBeingChanged={isBeingChanged}
+          isInSelectionGroup={isInSelectionGroup}
+          name={handleName}
+          onMouseDown={(event: React.MouseEvent) => {
+            // Ignore anything but left clicks
+            if (event.buttons !== 1) return;
 
-          event.stopPropagation();
+            event.stopPropagation();
 
-          const { x: planeX, y: planeY } = coordinateGetterRef.current(event);
+            const { x: planeX, y: planeY } = coordinateGetterRef.current(event);
 
-          const movingPoint = movementPoints[movementReferenceCorner];
-          const anchorPoint = anchorPoints[movementReferenceCorner];
-          const nextDragInnerOffset = {
-            x: planeX - movingPoint.x,
-            y: planeY - movingPoint.y,
-          };
+            const movingPoint = movementPoints[movementReferenceCorner];
+            const anchorPoint = anchorPoints[movementReferenceCorner];
+            const nextDragInnerOffset = {
+              x: planeX - movingPoint.x,
+              y: planeY - movingPoint.y,
+            };
 
-          eventEmitter.overwriteAllListenersOfType(
-            EventType.MouseEvent,
-            mouseHandlerRef
-          );
+            requestMouseHandler();
 
-          setDragState({
-            isMouseDown: true,
-            dragStartCoordinates: anchorPoint,
-            dragCurrentCoordinates: movingPoint,
-            dragInnerOffset: nextDragInnerOffset,
-            dragLock,
-            isDragToMove: false,
-          });
-        }}
-        recommendedSize={cornerSize}
-        scale={scale}
-        x={x}
-        y={y}
-      />
-    ));
+            setDragState({
+              isMouseDown: true,
+              dragStartCoordinates: anchorPoint,
+              dragCurrentCoordinates: movingPoint,
+              dragInnerOffset: nextDragInnerOffset,
+              dragLock,
+              isDragToMove: false,
+            });
+          }}
+          recommendedSize={cornerSize}
+          scale={scale}
+          x={x}
+          y={y}
+        />
+      )
+    );
 
   return handles;
 };
 
 const useNotifyRoot = (
-  eventEmitter,
-  height,
-  width,
-  x,
-  y,
-  shapeId,
-  isInternalComponent,
-  shapeActions
+  eventEmitter: EventEmitter,
+  height: number,
+  width: number,
+  x: number,
+  y: number,
+  shapeId: ShapeId,
+  isInternalComponent: boolean,
+  shapeActions: ShapeActions
 ) => {
   // Notify of shape rectangle changes
   useEffect(() => {
@@ -151,46 +204,87 @@ const useNotifyRoot = (
   }, [shapeActionsRef, isInternalComponent, eventEmitter]);
 };
 
-const defaultDragState = {
-  isMouseDown: false,
-  dragStartCoordinates: null,
-  dragCurrentCoordinates: null,
-  dragInnerOffset: null,
-  dragLock: null,
-  isDragToMove: true,
+const getNextRectOfSelectionChild = (
+  selectionStartRect: Rectangle,
+  selectionEndRect: Rectangle,
+  childRect: Rectangle
+): Rectangle => {
+  const scaleX =
+    selectionStartRect.width !== 0
+      ? selectionEndRect.width / selectionStartRect.width
+      : 0;
+  const scaleY =
+    selectionStartRect.height !== 0
+      ? selectionEndRect.height / selectionStartRect.height
+      : 0;
+
+  return {
+    x: selectionEndRect.x + (childRect.x - selectionStartRect.x) * scaleX,
+    y: selectionEndRect.y + (childRect.y - selectionStartRect.y) * scaleY,
+    width: scaleX !== 0 ? childRect.width * scaleX : selectionEndRect.width,
+    height: scaleY !== 0 ? childRect.height * scaleY : selectionEndRect.height,
+  };
+};
+
+const createSelectionChildRectConstrainedGetter = (
+  childRect: Rectangle,
+  constrainMove: ConstrainMoveFunc,
+  constrainResize: ConstrainResizeFunc,
+  vectorHeight: number,
+  vectorWidth: number
+) => (selectionStartRect: Rectangle, selectionEndRect: Rectangle) => {
+  const {
+    x: adjustedX,
+    y: adjustedY,
+    width: adjustedWidth,
+    height: adjustedHeight,
+  } = getNextRectOfSelectionChild(
+    selectionStartRect,
+    selectionEndRect,
+    childRect
+  );
+
+  const { x, y } = constrainMove({
+    originalX: childRect.x,
+    originalY: childRect.y,
+    x: adjustedX,
+    y: adjustedY,
+    width: adjustedWidth,
+    height: adjustedHeight,
+    vectorHeight,
+    vectorWidth,
+  });
+
+  const { x: right, y: bottom } = constrainResize({
+    originalMovingCorner: {
+      x: x + childRect.width,
+      y: y + childRect.height,
+    },
+    startCorner: { x, y },
+    movingCorner: {
+      x: x + adjustedWidth,
+      y: y + adjustedHeight,
+    },
+    lockedDimension: null,
+    vectorHeight,
+    vectorWidth,
+  });
+  return { x, y, width: right - x, height: bottom - y };
 };
 
 const useShapeActions = (
   forwardedRef,
-  props,
-  nativeActive,
-  wrapperElRef,
-  setDragState
+  props: WrappedShapePropsInActions,
+  forceFocusCb: () => void,
+  getSelectionChildUpdatedRect: GetSelectionChildUpdatedRect,
+  setDragState: SetDragState
 ) => {
-  const simulatedTransformRef = useRef(null);
+  const simulatedTransformRef = useRef(0);
   const shapeActions = {
     props,
-    forceFocus() {
-      // If it's already focused, return early
-      if (nativeActive) {
-        return;
-      }
-
-      if (wrapperElRef.current) {
-        if (wrapperElRef.current.focus) {
-          wrapperElRef.current.focus();
-        } else {
-          // IE11 doesn't have the focus method, so we use this hack from
-          // https://allyjs.io/tutorials/focusing-in-svg.html#focusing-svg-elements
-          try {
-            HTMLElement.prototype.focus.apply(wrapperElRef.current);
-          } catch (error) {
-            // silence the error
-          }
-        }
-      }
-    },
-    simulateTransform(nextRect) {
+    forceFocus: forceFocusCb,
+    getSelectionChildUpdatedRect,
+    simulateTransform(nextRect: Rectangle) {
       cancelAnimationFrame(simulatedTransformRef.current);
 
       if (!nextRect) {
@@ -214,8 +308,7 @@ const useShapeActions = (
 
   useImperativeHandle(forwardedRef, () => shapeActions, [
     props,
-    nativeActive,
-    wrapperElRef,
+    forceFocusCb,
     setDragState,
   ]);
 
@@ -223,98 +316,87 @@ const useShapeActions = (
 };
 
 const useMouseHandlerRef = (
-  props,
-  dragCurrentCoordinates,
-  dragInnerOffset,
-  dragLock,
-  dragStartCoordinates,
+  props: WrappedShapePropsInActions,
+  constrainMove: ConstrainMoveFunc,
+  constrainResize: ConstrainResizeFunc,
   coordinateGetterRef,
-  isDragToMove,
-  isMouseDown,
-  setDragState
+  dragCurrentCoordinates: Point,
+  dragInnerOffset: Point,
+  dragLock: DragLock,
+  dragStartCoordinates: Point,
+  eventEmitter,
+  isDragToMove: boolean,
+  isMouseDown: boolean,
+  onChange,
+  onIntermediateChange,
+  setDragState: SetDragState,
+  vectorHeight: number,
+  vectorWidth: number
 ) => {
-  const {
-    constrainMove,
-    constrainResize,
-    onChange,
-    onIntermediateChange,
-    height,
-    width,
-    x,
-    y,
-  } = props;
+  const { height, width, x, y } = props;
 
-  const getParentCoordinatesForMove = event => {
-    const { x: rawX, y: rawY } = coordinateGetterRef.current(
-      event,
-      dragInnerOffset
-    );
-
-    return constrainMove({
-      originalX: dragCurrentCoordinates ? dragCurrentCoordinates.x : rawX,
-      originalY: dragCurrentCoordinates ? dragCurrentCoordinates.y : rawY,
-      x: rawX,
-      y: rawY,
-      width,
-      height,
-    });
-  };
-
-  const getParentCoordinatesForResize = event => {
-    const { x: rawX, y: rawY } = coordinateGetterRef.current(
-      event,
-      dragInnerOffset
-    );
-
-    const { x: nextX, y: nextY } = constrainResize({
-      originalMovingCorner: dragCurrentCoordinates,
-      startCorner: dragStartCoordinates,
-      movingCorner: { x: rawX, y: rawY },
-      lockedDimension: dragLock,
-    });
-
-    return {
-      x: dragLock !== 'x' ? nextX : dragCurrentCoordinates.x,
-      y: dragLock !== 'y' ? nextY : dragCurrentCoordinates.y,
-    };
-  };
-
-  const onMouseMove = event => {
-    if (!isMouseDown) {
-      return;
-    }
+  const onMouseMove = (event: MouseEvent) => {
+    if (!isMouseDown) return;
 
     if (isDragToMove) {
-      const coords = getParentCoordinatesForMove(event);
-      if (coords) {
-        const right = coords.x + width;
-        const bottom = coords.y + height;
+      const { x: rawX, y: rawY } = coordinateGetterRef.current(
+        event,
+        dragInnerOffset
+      );
 
-        setDragState(prevState => ({
-          ...prevState,
-          dragCurrentCoordinates: coords,
-          dragStartCoordinates: { x: right, y: bottom },
-        }));
+      const coords = constrainMove({
+        originalX: dragCurrentCoordinates ? dragCurrentCoordinates.x : rawX,
+        originalY: dragCurrentCoordinates ? dragCurrentCoordinates.y : rawY,
+        x: rawX,
+        y: rawY,
+        width,
+        height,
+        vectorHeight,
+        vectorWidth,
+      });
 
-        onIntermediateChange({
-          x: coords.x,
-          y: coords.y,
-          width,
-          height,
-        });
-      }
+      const right = coords.x + width;
+      const bottom = coords.y + height;
+
+      setDragState(prevState => ({
+        ...prevState,
+        dragCurrentCoordinates: coords,
+        dragStartCoordinates: { x: right, y: bottom },
+      }));
+
+      onIntermediateChange({
+        x: coords.x,
+        y: coords.y,
+        width,
+        height,
+      });
     } else {
-      const coords = getParentCoordinatesForResize(event);
-      if (coords) {
-        setDragState(prevState => ({
-          ...prevState,
-          dragCurrentCoordinates: coords,
-        }));
+      const { x: rawX, y: rawY } = coordinateGetterRef.current(
+        event,
+        dragInnerOffset
+      );
 
-        onIntermediateChange(
-          getRectFromCornerCoordinates(coords, dragStartCoordinates)
-        );
-      }
+      const { x: nextX, y: nextY } = constrainResize({
+        originalMovingCorner: dragCurrentCoordinates,
+        startCorner: dragStartCoordinates,
+        movingCorner: { x: rawX, y: rawY },
+        lockedDimension: dragLock,
+        vectorHeight,
+        vectorWidth,
+      });
+
+      const coords = {
+        x: dragLock !== 'x' ? nextX : dragCurrentCoordinates.x,
+        y: dragLock !== 'y' ? nextY : dragCurrentCoordinates.y,
+      };
+      setDragState(prevState => ({
+        ...prevState,
+        dragCurrentCoordinates: coords,
+      }));
+
+      onIntermediateChange(
+        getRectFromCornerCoordinates(coords, dragStartCoordinates)
+      );
     }
   };
 
@@ -336,6 +418,7 @@ const useMouseHandlerRef = (
         dragStartCoordinates,
         dragCurrentCoordinates
       );
+
       if (
         nextRect.height !== height ||
         nextRect.width !== width ||
@@ -347,7 +430,7 @@ const useMouseHandlerRef = (
     }
   };
 
-  const mouseHandlerRef = useUpdatingRef(event => {
+  const mouseHandlerRef = useUpdatingRef((event: MouseEvent) => {
     if (event.type === 'mousemove') {
       onMouseMove(event);
     } else if (event.type === 'mouseup') {
@@ -355,24 +438,30 @@ const useMouseHandlerRef = (
     }
   });
 
-  return mouseHandlerRef;
+  return () => {
+    eventEmitter.overwriteAllListenersOfType(
+      EventType.MouseEvent,
+      mouseHandlerRef
+    );
+  };
 };
 
-const useOnKeyDown = props => {
-  const {
-    constrainMove,
-    constrainResize,
-    height,
-    keyboardTransformMultiplier,
-    onChange,
-    onDelete,
-    onKeyDown,
-    width,
-    x,
-    y,
-  } = props;
-
-  const keyboardMove = (dX, dY) => {
+const useOnKeyDown = (
+  props: WrappedShapePropsInActions,
+  constrainMove: ConstrainMoveFunc,
+  constrainResize: ConstrainResizeFunc,
+  height: number,
+  keyboardTransformMultiplier: number,
+  onChange,
+  onDelete,
+  onKeyDown,
+  vectorHeight: number,
+  vectorWidth: number,
+  width: number,
+  x: number,
+  y: number
+) => {
+  const keyboardMove = (dX: number, dY: number) => {
     const { x: nextX, y: nextY } = constrainMove({
       originalX: x,
       originalY: y,
@@ -380,20 +469,14 @@ const useOnKeyDown = props => {
       y: y + dY * keyboardTransformMultiplier,
       width,
       height,
+      vectorHeight,
+      vectorWidth,
     });
 
-    onChange(
-      {
-        x: nextX,
-        y: nextY,
-        width: props.width,
-        height: props.height,
-      },
-      props
-    );
+    onChange({ x: nextX, y: nextY, width, height }, props);
   };
 
-  const keyboardResize = (dX, dY) => {
+  const keyboardResize = (dX: number, dY: number) => {
     const { x: nextX, y: nextY } = constrainResize({
       originalMovingCorner: {
         x: x + width,
@@ -404,6 +487,9 @@ const useOnKeyDown = props => {
         x: x + width + dX * keyboardTransformMultiplier,
         y: y + height + dY * keyboardTransformMultiplier,
       },
+      lockedDimension: null,
+      vectorHeight,
+      vectorWidth,
     });
 
     onChange(
@@ -412,18 +498,17 @@ const useOnKeyDown = props => {
     );
   };
 
-  return event => {
+  return (event: React.KeyboardEvent) => {
     // User-defined callback
     onKeyDown(event, props);
 
     // If the user-defined callback called event.preventDefault(),
     // we consider the event handled
-    if (event.defaultPrevented) {
-      return;
-    }
+    if (event.defaultPrevented) return;
 
     let handled = true;
-    const handleKeyboardTransform = (moveArgs, resizeArgs) =>
+    type KeyArgs = [number, number];
+    const handleKeyboardTransform = (moveArgs: KeyArgs, resizeArgs: KeyArgs) =>
       event.shiftKey
         ? keyboardResize(...resizeArgs)
         : keyboardMove(...moveArgs);
@@ -454,227 +539,10 @@ const useOnKeyDown = props => {
   };
 };
 
-function wrapShape(WrappedComponent) {
-  const WrappedShape = React.forwardRef((props, forwardedRef) => {
-    const {
-      // props extracted here are not passed to child
-      constrainMove,
-      constrainResize,
-      isInternalComponent,
-      keyboardTransformMultiplier,
-      onBlur,
-      onChange,
-      onDelete,
-      onFocus,
-      onIntermediateChange,
-      onKeyDown,
-      ResizeHandleComponent,
-      wrapperProps,
-      ...otherProps
-    } = props;
-    const {
-      // props extracted here are still passed to the child
-      active: artificialActive,
-      disabled,
-      isInSelectionGroup,
-      shapeId,
-      height,
-      width,
-      x,
-      y,
-    } = props;
-
-    const {
-      dimensions: { scale },
-      coordinateGetterRef,
-      eventEmitter,
-    } = useRootContext();
-
-    const wrapperElRef = useRef(null);
-
-    const [nativeActive, setNativeActive] = useState(false);
-
-    const active = artificialActive !== null ? artificialActive : nativeActive;
-
-    const [
-      {
-        isMouseDown,
-        dragStartCoordinates,
-        dragCurrentCoordinates,
-        dragInnerOffset,
-        dragLock,
-        isDragToMove,
-      },
-      setDragState,
-    ] = useState(defaultDragState);
-
-    useCancelModeOnEscapeKey(isMouseDown, () => setDragState(defaultDragState));
-
-    const shapeActions = useShapeActions(
-      forwardedRef,
-      props,
-      nativeActive,
-      wrapperElRef,
-      setDragState
-    );
-
-    useNotifyRoot(
-      eventEmitter,
-      height,
-      width,
-      x,
-      y,
-      shapeId,
-      isInternalComponent,
-      shapeActions
-    );
-
-    const sides = !isMouseDown
-      ? {
-          left: x,
-          right: x + width,
-          top: y,
-          bottom: y + height,
-        }
-      : {
-          left: Math.min(dragStartCoordinates.x, dragCurrentCoordinates.x),
-          right: Math.max(dragStartCoordinates.x, dragCurrentCoordinates.x),
-          top: Math.min(dragStartCoordinates.y, dragCurrentCoordinates.y),
-          bottom: Math.max(dragStartCoordinates.y, dragCurrentCoordinates.y),
-        };
-
-    const currentWidth = sides.right - sides.left;
-    const currentHeight = sides.bottom - sides.top;
-
-    const mouseHandlerRef = useMouseHandlerRef(
-      props,
-      dragCurrentCoordinates,
-      dragInnerOffset,
-      dragLock,
-      dragStartCoordinates,
-      coordinateGetterRef,
-      isDragToMove,
-      isMouseDown,
-      setDragState
-    );
-
-    // Generate drag handles
-    const handles = getHandles(
-      ResizeHandleComponent,
-      sides,
-      scale,
-      active,
-      nativeActive,
-      isInSelectionGroup,
-      coordinateGetterRef,
-      eventEmitter,
-      mouseHandlerRef,
-      setDragState,
-      isMouseDown
-    );
-
-    const shapeOnKeyDown = useOnKeyDown(props);
-    const gotFocusAfterClickRef = useRef(true);
-
-    return (
-      <g
-        data-shape-id={shapeId}
-        className="rse-shape-wrapper"
-        transform={`translate(${sides.left},${sides.top})`}
-        style={{
-          cursor: 'move',
-          outline: 'none',
-          ...(disabled ? { pointerEvents: 'none' } : {}),
-        }}
-        ref={wrapperElRef}
-        focusable={!disabled ? true : undefined} // IE11 support
-        tabIndex={!disabled ? 0 : undefined}
-        onFocus={event => {
-          gotFocusAfterClickRef.current = true;
-          eventEmitter.emit(EventType.ChildFocus, shapeId, isInternalComponent);
-          setNativeActive(true);
-
-          // Call user-defined focus handler
-          onFocus(event, props);
-        }}
-        onBlur={event => {
-          setNativeActive(false);
-          onBlur(event, props);
-        }}
-        onMouseUp={() => {
-          // Focusing support for Safari
-          // Safari (12) does not currently allow focusing via mouse events,
-          // even on elements with tabIndex="0" (tabbing with the keyboard
-          // does work, however). This logic waits to see if focus was called
-          // following a click, and forces the focused state if necessary.
-          if (!gotFocusAfterClickRef.current) {
-            shapeActions.forceFocus();
-          }
-        }}
-        onMouseDown={event => {
-          // Ignore anything but left clicks
-          if (event.buttons !== 1) return;
-
-          event.stopPropagation();
-
-          if (event.shiftKey) {
-            eventEmitter.emit(
-              EventType.ChildToggleSelection,
-              shapeId,
-              isInternalComponent,
-              event
-            );
-
-            // Prevent default to keep this from triggering blur/focus events
-            // on the elements involved, which would otherwise cause a wave
-            // of event listener callbacks that are not needed.
-            event.preventDefault();
-            return;
-          }
-
-          gotFocusAfterClickRef.current = false;
-
-          const { x: planeX, y: planeY } = coordinateGetterRef.current(event);
-
-          eventEmitter.overwriteAllListenersOfType(
-            EventType.MouseEvent,
-            mouseHandlerRef
-          );
-          setDragState(prevState => ({
-            ...prevState,
-            isMouseDown: true,
-            dragCurrentCoordinates: { x, y },
-            dragStartCoordinates: {
-              x: x + currentWidth,
-              y: y + currentHeight,
-            },
-            dragInnerOffset: {
-              x: planeX - x,
-              y: planeY - y,
-            },
-            isDragToMove: true,
-          }));
-        }}
-        onKeyDown={shapeOnKeyDown}
-        // eslint-disable-next-line react/jsx-props-no-spreading
-        {...wrapperProps}
-      >
-        <WrappedComponent
-          isBeingChanged={isMouseDown}
-          active={active}
-          nativeActive={nativeActive}
-          scale={scale}
-          // eslint-disable-next-line react/jsx-props-no-spreading
-          {...otherProps}
-          width={currentWidth}
-          height={currentHeight}
-        />
-        {!disabled && handles}
-      </g>
-    );
-  });
-
-  WrappedShape.propTypes = {
+function wrapShape(
+  WrappedComponent: React.ComponentType<WrappedShapeReceivedProps>
+) {
+  const propTypes = {
     active: PropTypes.bool,
     constrainMove: PropTypes.func,
     constrainResize: PropTypes.func,
@@ -697,23 +565,289 @@ function wrapShape(WrappedComponent) {
     y: PropTypes.number.isRequired,
   };
 
-  WrappedShape.defaultProps = {
-    active: null,
-    constrainMove: defaultConstrainMove,
-    constrainResize: defaultConstrainResize,
-    disabled: false,
-    isInSelectionGroup: false,
-    isInternalComponent: false,
-    keyboardTransformMultiplier: 1,
-    onBlur: () => {},
-    onChange: () => {},
-    onDelete: () => {},
-    onFocus: () => {},
-    onIntermediateChange: () => {},
-    onKeyDown: () => {},
-    ResizeHandleComponent: DefaultResizeHandleComponent,
-    wrapperProps: {},
-  };
+  const WrappedShape = React.forwardRef<
+    React.FunctionComponent<WrappedShapeProps>,
+    WrappedShapeProps
+  >(
+    (
+      {
+        // props extracted here are not passed to child
+        constrainMove = defaultConstrainMove,
+        constrainResize = defaultConstrainResize,
+        isInternalComponent = false,
+        keyboardTransformMultiplier = 1,
+        onBlur = () => {},
+        onChange = () => {},
+        onDelete = () => {},
+        onFocus = () => {},
+        onIntermediateChange = () => {},
+        onKeyDown = () => {},
+        ResizeHandleComponent = DefaultResizeHandleComponent,
+        wrapperProps = {},
+        ...otherMainProps
+      },
+      forwardedRef
+    ) => {
+      const [nativeActive, setNativeActive] = useState(false);
+
+      const props: WrappedShapePropsInActions = {
+        disabled: false,
+        isInSelectionGroup: false,
+        ...otherMainProps,
+        active:
+          otherMainProps.active !== undefined
+            ? otherMainProps.active
+            : nativeActive,
+      };
+      const {
+        // props extracted here are still passed to the child
+        active,
+        disabled,
+        isInSelectionGroup,
+        shapeId,
+        height,
+        width,
+        x,
+        y,
+      } = props;
+
+      const {
+        dimensions: { scale, vectorHeight, vectorWidth },
+        coordinateGetterRef,
+        eventEmitter,
+      } = useRootContext();
+
+      const wrapperElRef = useRef<SVGGElement>(null);
+
+      const [
+        {
+          isMouseDown,
+          dragStartCoordinates,
+          dragCurrentCoordinates,
+          dragInnerOffset,
+          dragLock,
+          isDragToMove,
+        },
+        setDragState,
+      ] = useState(defaultDragState);
+
+      useCancelModeOnEscapeKey(isMouseDown, () =>
+        setDragState(defaultDragState)
+      );
+
+      const forceFocusCb = useCallback(() => {
+        // Force focus if it's not already focused
+        if (!nativeActive) {
+          forceFocus(wrapperElRef.current);
+        }
+      }, [nativeActive, wrapperElRef]);
+      const getSelectionChildUpdatedRect = useCallback(
+        createSelectionChildRectConstrainedGetter(
+          { x, y, height, width },
+          constrainMove,
+          constrainResize,
+          vectorHeight,
+          vectorWidth
+        ),
+        [
+          x,
+          y,
+          width,
+          height,
+          constrainMove,
+          constrainResize,
+          vectorWidth,
+          vectorHeight,
+        ]
+      );
+      const shapeActions = useShapeActions(
+        forwardedRef,
+        props,
+        forceFocusCb,
+        getSelectionChildUpdatedRect,
+        setDragState
+      );
+
+      useNotifyRoot(
+        eventEmitter,
+        height,
+        width,
+        x,
+        y,
+        shapeId,
+        isInternalComponent,
+        shapeActions
+      );
+
+      const sides = !isMouseDown
+        ? {
+            left: x,
+            right: x + width,
+            top: y,
+            bottom: y + height,
+          }
+        : {
+            left: Math.min(dragStartCoordinates.x, dragCurrentCoordinates.x),
+            right: Math.max(dragStartCoordinates.x, dragCurrentCoordinates.x),
+            top: Math.min(dragStartCoordinates.y, dragCurrentCoordinates.y),
+            bottom: Math.max(dragStartCoordinates.y, dragCurrentCoordinates.y),
+          };
+
+      const currentWidth = sides.right - sides.left;
+      const currentHeight = sides.bottom - sides.top;
+
+      const requestMouseHandler = useMouseHandlerRef(
+        props,
+        constrainMove,
+        constrainResize,
+        coordinateGetterRef,
+        dragCurrentCoordinates,
+        dragInnerOffset,
+        dragLock,
+        dragStartCoordinates,
+        eventEmitter,
+        isDragToMove,
+        isMouseDown,
+        onChange,
+        onIntermediateChange,
+        setDragState,
+        vectorHeight,
+        vectorWidth
+      );
+
+      // Generate drag handles
+      const handles = getHandles(
+        ResizeHandleComponent,
+        sides,
+        scale,
+        active,
+        nativeActive,
+        isInSelectionGroup,
+        coordinateGetterRef,
+        requestMouseHandler,
+        setDragState,
+        isMouseDown
+      );
+
+      const shapeOnKeyDown = useOnKeyDown(
+        props,
+        constrainMove,
+        constrainResize,
+        height,
+        keyboardTransformMultiplier,
+        onChange,
+        onDelete,
+        onKeyDown,
+        vectorHeight,
+        vectorWidth,
+        width,
+        x,
+        y
+      );
+      const gotFocusAfterClickRef = useRef(true);
+
+      return (
+        <g
+          data-shape-id={shapeId}
+          className="rse-shape-wrapper"
+          transform={`translate(${sides.left},${sides.top})`}
+          style={{
+            cursor: 'move',
+            outline: 'none',
+            ...(disabled ? { pointerEvents: 'none' } : {}),
+          }}
+          ref={wrapperElRef}
+          focusable={!disabled ? 'true' : undefined} // IE11 support
+          tabIndex={!disabled ? 0 : undefined}
+          onFocus={event => {
+            gotFocusAfterClickRef.current = true;
+            eventEmitter.emit(
+              EventType.ChildFocus,
+              shapeId,
+              isInternalComponent
+            );
+            setNativeActive(true);
+
+            // Call user-defined focus handler
+            onFocus(event, props);
+          }}
+          onBlur={event => {
+            setNativeActive(false);
+            onBlur(event, props);
+          }}
+          onMouseUp={() => {
+            // Focusing support for Safari
+            // Safari (12) does not currently allow focusing via mouse events,
+            // even on elements with tabIndex="0" (tabbing with the keyboard
+            // does work, however). This logic waits to see if focus was called
+            // following a click, and forces the focused state if necessary.
+            if (!gotFocusAfterClickRef.current) {
+              shapeActions.forceFocus();
+            }
+          }}
+          onMouseDown={event => {
+            // Ignore anything but left clicks
+            if (event.buttons !== 1) return;
+
+            event.stopPropagation();
+
+            if (event.shiftKey) {
+              eventEmitter.emit(
+                EventType.ChildToggleSelection,
+                shapeId,
+                isInternalComponent,
+                event
+              );
+
+              // Prevent default to keep this from triggering blur/focus events
+              // on the elements involved, which would otherwise cause a wave
+              // of event listener callbacks that are not needed.
+              event.preventDefault();
+              return;
+            }
+
+            gotFocusAfterClickRef.current = false;
+
+            const { x: planeX, y: planeY } = coordinateGetterRef.current(event);
+
+            requestMouseHandler();
+
+            setDragState(prevState => ({
+              ...prevState,
+              isMouseDown: true,
+              dragCurrentCoordinates: { x, y },
+              dragStartCoordinates: {
+                x: x + currentWidth,
+                y: y + currentHeight,
+              },
+              dragInnerOffset: {
+                x: planeX - x,
+                y: planeY - y,
+              },
+              isDragToMove: true,
+            }));
+          }}
+          onKeyDown={shapeOnKeyDown}
+          // eslint-disable-next-line react/jsx-props-no-spreading
+          {...wrapperProps}
+        >
+          <WrappedComponent
+            isBeingChanged={isMouseDown}
+            active={active}
+            nativeActive={nativeActive}
+            scale={scale}
+            // eslint-disable-next-line react/jsx-props-no-spreading
+            {...props}
+            width={currentWidth}
+            height={currentHeight}
+          />
+          {!disabled && handles}
+        </g>
+      );
+    }
+  );
+
+  WrappedShape.propTypes = propTypes;
 
   WrappedShape.displayName = `wrapShape(${WrappedComponent.displayName ||
     WrappedComponent.name ||
