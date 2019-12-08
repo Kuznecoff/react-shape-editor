@@ -19,7 +19,7 @@ Please, before making a well-intentioned PR, create an issue to discuss the func
 npm i react-shape-editor
 ```
 
-## Usage / Codesandbox Examples
+## Usage / CodeSandbox Examples
 
 - [Basic Example with Drawing](https://codesandbox.io/s/basic-example-with-drawing-react-shape-editor-vcmj3)
 - [Selection or Drawing Toggle](https://codesandbox.io/s/selection-or-drawing-toggle-react-shape-editor-7zed8)
