@@ -23,6 +23,7 @@ npm i react-shape-editor
 
 - [Basic Example with Drawing](https://codesandbox.io/s/basic-example-with-drawing-react-shape-editor-vcmj3)
 - [Selection or Drawing Toggle](https://codesandbox.io/s/selection-or-drawing-toggle-react-shape-editor-7zed8)
+- [Selection and Drawing Hybrid](https://codesandbox.io/s/selection-and-drawing-hybrid-react-shape-editor-kejgy)
 
 ## Components
 
