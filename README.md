@@ -19,93 +19,11 @@ Please, before making a well-intentioned PR, create an issue to discuss the func
 npm i react-shape-editor
 ```
 
-## Usage
+## Usage / Codesandbox Examples
 
-```jsx
-import React, { useState } from 'react';
-import {
-  ShapeEditor,
-  ImageLayer,
-  DrawLayer,
-  wrapShape,
-} from 'react-shape-editor';
+[Basic Example with Drawing](https://codesandbox.io/s/basic-example-with-drawing-react-shape-editor-vcmj3)
+[Selection or Drawing Toggle](https://codesandbox.io/s/selection-or-drawing-toggle-react-shape-editor-7zed8)
 
-function arrayReplace(arr, index, item) {
-  return [
-    ...arr.slice(0, index),
-    ...(Array.isArray(item) ? item : [item]),
-    ...arr.slice(index + 1),
-  ];
-}
-
-const RectShape = wrapShape(({ width, height }) => (
-  <rect width={width} height={height} fill="rgba(0,0,255,0.5)" />
-));
-
-let idIterator = 1;
-const Editor = () => {
-  const [items, setItems] = useState([
-    { id: '1', x: 20, y: 50, width: 50, height: 25 },
-    { id: '2', x: 120, y: 0, width: 20, height: 75 },
-  ]);
-
-  const [{ vectorHeight, vectorWidth }, setVectorDimensions] = useState({
-    vectorHeight: 0,
-    vectorWidth: 0,
-  });
-
-  return (
-    <div style={{ height: 400 }}>
-      <ShapeEditor vectorWidth={vectorWidth} vectorHeight={vectorHeight}>
-        <ImageLayer
-          src="https://raw.githubusercontent.com/fritz-c/react-shape-editor/d8661b46d07d832e316aacc906a0d603a3bb13a2/website/blank.png"
-          onLoad={({ naturalWidth, naturalHeight }) => {
-            setVectorDimensions({
-              vectorWidth: naturalWidth,
-              vectorHeight: naturalHeight,
-            });
-          }}
-        />
-        <DrawLayer
-          onAddShape={({ x, y, width, height }) => {
-            setItems(currentItems => [
-              ...currentItems,
-              { id: `id${idIterator}`, x, y, width, height },
-            ]);
-            idIterator += 1;
-          }}
-        />
-        {items.map((item, index) => {
-          const { id, height, width, x, y } = item;
-          return (
-            <RectShape
-              key={id}
-              shapeId={id}
-              height={height}
-              width={width}
-              x={x}
-              y={y}
-              onChange={newRect => {
-                setItems(currentItems =>
-                  arrayReplace(currentItems, index, {
-                    ...item,
-                    ...newRect,
-                  })
-                );
-              }}
-              onDelete={() => {
-                setItems(currentItems => arrayReplace(currentItems, index, []));
-              }}
-            />
-          );
-        })}
-      </ShapeEditor>
-    </div>
-  );
-};
-
-export default Editor;
-```
 
 ## Components
 
