@@ -100,3 +100,18 @@ it('can cancel out of resizing and moving shapes with Escape key', () => {
 
   expectRect(shape, { x: 20, y: 50, height: 25, width: 50 });
 });
+
+it('can get wrapper SVG element ref', () => {
+  let shapeEditorEl: SVGSVGElement;
+  render(
+    <EasyMode
+      shapeEditorProps={{
+        ref: el => {
+          shapeEditorEl = el;
+        },
+      }}
+    />
+  );
+
+  expect(shapeEditorEl).toBeTruthy();
+});

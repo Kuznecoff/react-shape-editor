@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useImperativeHandle } from 'react';
 import PropTypes from 'prop-types';
 import {
   CoordinateGetterRefProvider,
@@ -134,114 +134,126 @@ const propTypes = {
   vectorWidth: PropTypes.number,
 };
 
-const ShapeEditor: React.FunctionComponent<Props> = ({
-  children = null,
-  focusOnAdd = true,
-  focusOnDelete = true,
-  scale = 1,
-  style = {},
-  vectorHeight = 0,
-  vectorWidth = 0,
-  padding = 0,
-  ...otherProps
-}) => {
-  const {
-    top: paddingTop,
-    right: paddingRight,
-    bottom: paddingBottom,
-    left: paddingLeft,
-  } =
-    typeof padding === 'number'
-      ? {
-          top: padding,
-          right: padding,
-          bottom: padding,
-          left: padding,
+const ShapeEditor = React.forwardRef<SVGSVGElement | null, Props>(
+  (
+    {
+      children = null,
+      focusOnAdd = true,
+      focusOnDelete = true,
+      scale = 1,
+      style = {},
+      vectorHeight = 0,
+      vectorWidth = 0,
+      padding = 0,
+      ...otherProps
+    },
+    forwardedRef
+  ) => {
+    const {
+      top: paddingTop,
+      right: paddingRight,
+      bottom: paddingBottom,
+      left: paddingLeft,
+    } =
+      typeof padding === 'number'
+        ? {
+            top: padding,
+            right: padding,
+            bottom: padding,
+            left: padding,
+          }
+        : {
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            ...padding,
+          };
+
+    const svgElRef = useRef<SVGSVGElement>(null);
+    useImperativeHandle(forwardedRef, () => svgElRef.current);
+
+    const getVectorCoordinatesFromMouseEventRef = useUpdatingRef(
+      (
+        event: MouseEvent | React.MouseEvent,
+        { x: offsetX = 0, y: offsetY = 0 } = {}
+      ): Point => {
+        if (!svgElRef.current) {
+          return { x: 0, y: 0 };
         }
-      : {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-          ...padding,
+
+        const { top, left } = svgElRef.current.getBoundingClientRect();
+
+        return {
+          x: (event.clientX - left - paddingLeft) / scale - offsetX,
+          y: (event.clientY - top - paddingTop) / scale - offsetY,
         };
-
-  const svgElRef = useRef<SVGSVGElement>(null);
-  const getPlaneCoordinatesFromEventRef = useUpdatingRef(
-    (event: MouseEvent, { x: offsetX = 0, y: offsetY = 0 } = {}): Point => {
-      if (!svgElRef.current) {
-        return { x: 0, y: 0 };
       }
+    );
 
-      const { top, left } = svgElRef.current.getBoundingClientRect();
+    const onShapeMountedOrUnmounted = useChildAddDeleteHandler(
+      focusOnAdd,
+      focusOnDelete
+    );
 
-      return {
-        x: (event.clientX - left - paddingLeft) / scale - offsetX,
-        y: (event.clientY - top - paddingTop) / scale - offsetY,
-      };
-    }
-  );
+    const eventEmitter = useNewEventEmitter();
+    useMouseEventForwarding(eventEmitter);
+    useAdditionalListener(
+      eventEmitter,
+      EventType.MountedOrUnmounted,
+      onShapeMountedOrUnmounted
+    );
 
-  const onShapeMountedOrUnmounted = useChildAddDeleteHandler(
-    focusOnAdd,
-    focusOnDelete
-  );
+    const vectorPaddingTop = paddingTop / scale;
+    const vectorPaddingRight = paddingRight / scale;
+    const vectorPaddingBottom = paddingBottom / scale;
+    const vectorPaddingLeft = paddingLeft / scale;
 
-  const eventEmitter = useNewEventEmitter();
-  useMouseEventForwarding(eventEmitter);
-  useAdditionalListener(
-    eventEmitter,
-    EventType.MountedOrUnmounted,
-    onShapeMountedOrUnmounted
-  );
-
-  const vectorPaddingTop = paddingTop / scale;
-  const vectorPaddingRight = paddingRight / scale;
-  const vectorPaddingBottom = paddingBottom / scale;
-  const vectorPaddingLeft = paddingLeft / scale;
-
-  return (
-    <svg
-      className="rse-plane-container"
-      width={vectorWidth * scale + paddingLeft + paddingRight}
-      height={vectorHeight * scale + paddingTop + paddingBottom}
-      preserveAspectRatio="xMinYMin"
-      viewBox={[
-        -vectorPaddingLeft,
-        -vectorPaddingTop,
-        vectorWidth + vectorPaddingLeft + vectorPaddingRight,
-        vectorHeight + vectorPaddingTop + vectorPaddingBottom,
-      ].join(' ')}
-      ref={svgElRef}
-      style={{
-        userSelect: 'none',
-        ...style,
-      }}
-      // IE11 - prevent all elements from being focusable by default
-      focusable="false"
-      // eslint-disable-next-line react/jsx-props-no-spreading
-      {...otherProps}
-    >
-      <CoordinateGetterRefProvider value={getPlaneCoordinatesFromEventRef}>
-        <EventEmitterProvider value={eventEmitter}>
-          <DimensionsProvider
-            value={{
-              vectorWidth,
-              vectorHeight,
-              vectorPaddingTop,
-              vectorPaddingRight,
-              vectorPaddingBottom,
-              vectorPaddingLeft,
-              scale,
-            }}
-          >
-            {children}
-          </DimensionsProvider>
-        </EventEmitterProvider>
-      </CoordinateGetterRefProvider>
-    </svg>
-  );
-};
+    return (
+      <svg
+        className="rse-plane-container"
+        width={vectorWidth * scale + paddingLeft + paddingRight}
+        height={vectorHeight * scale + paddingTop + paddingBottom}
+        preserveAspectRatio="xMinYMin"
+        viewBox={[
+          -vectorPaddingLeft,
+          -vectorPaddingTop,
+          vectorWidth + vectorPaddingLeft + vectorPaddingRight,
+          vectorHeight + vectorPaddingTop + vectorPaddingBottom,
+        ].join(' ')}
+        ref={svgElRef}
+        style={{
+          userSelect: 'none',
+          ...style,
+        }}
+        // IE11 - prevent all elements from being focusable by default
+        focusable="false"
+        // eslint-disable-next-line react/jsx-props-no-spreading
+        {...otherProps}
+      >
+        <CoordinateGetterRefProvider
+          value={getVectorCoordinatesFromMouseEventRef}
+        >
+          <EventEmitterProvider value={eventEmitter}>
+            <DimensionsProvider
+              value={{
+                vectorWidth,
+                vectorHeight,
+                vectorPaddingTop,
+                vectorPaddingRight,
+                vectorPaddingBottom,
+                vectorPaddingLeft,
+                scale,
+              }}
+            >
+              {children}
+            </DimensionsProvider>
+          </EventEmitterProvider>
+        </CoordinateGetterRefProvider>
+      </svg>
+    );
+  }
+);
 
 ShapeEditor.propTypes = propTypes;
 
