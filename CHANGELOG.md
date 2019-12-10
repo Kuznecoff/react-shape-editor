@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="3.5.1"></a>
+## [3.5.1](https://github.com/fritz-c/react-shape-editor/compare/v3.5.0...v3.5.1) (2019-12-10)
+
+
+### Bug Fixes
+
+* clear selection after deletion ([c65a506](https://github.com/fritz-c/react-shape-editor/commit/c65a506))
+
+
+
 <a name="3.5.0"></a>
 # [3.5.0](https://github.com/fritz-c/react-shape-editor/compare/v3.4.0...v3.5.0) (2019-12-10)
 
