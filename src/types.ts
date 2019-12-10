@@ -119,8 +119,7 @@ export type WrappedShapePropsInActions = Required<
     | 'ResizeHandleComponent'
     | 'wrapperProps'
   >
-> & // Allow for passing of any extra props
-{ [k: string]: any };
+> & { [k: string]: any }; // Allow for passing of any extra props
 
 export type GetSelectionChildUpdatedRect = (
   selectionStartRect: Rectangle,
