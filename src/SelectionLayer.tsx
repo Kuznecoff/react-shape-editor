@@ -125,13 +125,9 @@ const useChildAddDeleteHandler = (
     if (selectedChildrenDidChangeRef.current) {
       selectedChildrenDidChangeRef.current = false;
 
-      // Only force update if there is a selection visible.
+      // Only force update if there is a selection.
       // Otherwise, no change
-      if (
-        selectedShapeIds.filter(
-          shapeId => wrappedShapeActionRefsRef.current[shapeId]
-        ).length >= 2
-      ) {
+      if (selectedShapeIds.length >= 2) {
         forceUpdate();
       }
     }
