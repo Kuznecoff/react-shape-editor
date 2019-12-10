@@ -27,7 +27,7 @@ export const SelectionContext = React.createContext(null);
 
 const SELECTION_COMPONENT_SHAPE_ID = 'rse-internal-selection-component';
 
-const getSelectionRect = childRects => {
+const getSelectionRect = (childRects: Rectangle[]) => {
   const selectionX = Math.min(...childRects.map(c => c.x));
   const selectionY = Math.min(...childRects.map(c => c.y));
 
@@ -40,15 +40,15 @@ const getSelectionRect = childRects => {
 };
 
 const useMouseHandlerRef = (
-  isMouseDown,
-  dragStartCoordinates,
-  dragCurrentCoordinates,
+  isMouseDown: boolean,
+  dragStartCoordinates: Point,
+  dragCurrentCoordinates: Point,
   setDragState,
   coordinateGetterRef,
   selectionElRef,
   onSelectionChange,
   wrappedShapeActionRefsRef,
-  selectionIsLargeEnough
+  selectionIsLargeEnough: () => boolean
 ) => {
   const onMouseUp = () => {
     if (!isMouseDown) return;
@@ -148,7 +148,7 @@ const useChildAddDeleteHandler = (
     }
   };
 
-  const onShapeMountedOrUnmounted = (shapeActionsRef, didMount) => {
+  const onShapeMountedOrUnmounted = (shapeActionsRef, didMount: boolean) => {
     const { shapeId } = shapeActionsRef.current.props;
     if (
       !selectedChildrenDidChangeRef.current &&
@@ -243,7 +243,7 @@ const useChildAddDeleteHandler = (
     }
   };
 
-  const onChildFocus = (shapeId, isInternalComponent) => {
+  const onChildFocus = (shapeId: ShapeId, isInternalComponent: boolean) => {
     if (isInternalComponent) return;
 
     if (
