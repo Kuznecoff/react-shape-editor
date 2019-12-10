@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="3.5.0"></a>
+# [3.5.0](https://github.com/fritz-c/react-shape-editor/compare/v3.4.0...v3.5.0) (2019-12-10)
+
+
+### Features
+
+* forward ref of the ShapeEditor's internal SVG element ([d42a384](https://github.com/fritz-c/react-shape-editor/commit/d42a384))
+
+
+
 <a name="3.4.0"></a>
 # [3.4.0](https://github.com/fritz-c/react-shape-editor/compare/v3.3.1...v3.4.0) (2019-12-04)
 
