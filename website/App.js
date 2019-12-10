@@ -290,8 +290,7 @@ class App extends Component {
                       .map(p => p.shapeIndex)
                       // Delete the indices in reverse so as not to shift the
                       // other array elements and screw up the array indices
-                      .sort()
-                      .reverse()
+                      .sort((a, b) => b - a)
                       .reduce(
                         (acc, shapeIndex) => arrayReplace(acc, shapeIndex, []),
                         state.items
