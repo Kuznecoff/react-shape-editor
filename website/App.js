@@ -1,5 +1,10 @@
 import React, { Component } from 'react';
-import { ShapeEditor, ImageLayer, DrawLayer, SelectionLayer } from '../src';
+import {
+  ShapeEditor,
+  ImageLayer,
+  DrawLayer,
+  SelectionLayer,
+} from '../src/index.ts';
 import RectShape from './RectShape';
 import OvalShape from './OvalShape';
 import StarShape from './StarShape';

@@ -96,7 +96,7 @@ export type WrappedShapeProps = {
   ) => void;
   onIntermediateChange?: (intermediateRect: Rectangle) => void;
   ResizeHandleComponent?: ResizeHandleComponentType;
-  shapeId: string;
+  shapeId: ShapeId;
   width: number;
   wrapperProps?: object;
   x: number;
@@ -119,7 +119,8 @@ export type WrappedShapePropsInActions = Required<
     | 'ResizeHandleComponent'
     | 'wrapperProps'
   >
->;
+> & // Allow for passing of any extra props
+{ [k: string]: any };
 
 export type GetSelectionChildUpdatedRect = (
   selectionStartRect: Rectangle,

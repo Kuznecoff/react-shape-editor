@@ -2,7 +2,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import { wrapShape } from '../src';
+import { wrapShape } from '../src/index.ts';
 
 const starPoints = '350,75 379,161 469,161 397,215 423,301 350,250 277,301 303,215 231,161 321,161'
   .split(' ')

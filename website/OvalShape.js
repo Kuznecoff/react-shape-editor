@@ -2,7 +2,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import { wrapShape } from '../src';
+import { wrapShape } from '../src/index.ts';
 
 const OvalShape = ({ width, height }) => {
   return (

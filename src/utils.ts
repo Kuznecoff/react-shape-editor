@@ -39,3 +39,23 @@ export const forceFocus = (element: SVGElement | null): void => {
     }
   }
 };
+
+/**
+ * Returns elements underneath the specified x and y coordinates.
+ * @param clientX
+ * @param clientY
+ */
+export const getElementsFromPoint = (
+  clientX: number,
+  clientY: number
+): Element[] => {
+  // eslint-disable-next-line dot-notation
+  return typeof document['msElementsFromPoint'] === 'function'
+    ? Array.prototype.slice.call(
+        // msElementsFromPoint returns null when there are no elements
+        // found
+        // eslint-disable-next-line dot-notation
+        document['msElementsFromPoint'](clientX, clientY) || []
+      )
+    : document.elementsFromPoint(clientX, clientY);
+};

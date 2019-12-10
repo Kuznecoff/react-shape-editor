@@ -1,19 +1,25 @@
 import React, { useEffect, useRef, useState } from 'react';
-import PropTypes from 'prop-types';
-import { getRectFromCornerCoordinates } from './utils.ts';
-import useRootContext from './useRootContext.tsx';
-import DefaultSelectionDrawComponent from './DefaultSelectionDrawComponent.tsx';
-import DefaultSelectionComponent from './DefaultSelectionComponent.tsx';
+import PropTypes, { ReactNodeLike, ReactComponentLike } from 'prop-types';
+import { getRectFromCornerCoordinates, getElementsFromPoint } from './utils';
+import useRootContext from './useRootContext';
+import DefaultSelectionDrawComponent from './DefaultSelectionDrawComponent';
+import DefaultSelectionComponent from './DefaultSelectionComponent';
 import {
   useCancelModeOnEscapeKey,
   useForceUpdate,
   useUpdatingRef,
-} from './hooks.ts';
-import { EventType, useAdditionalListener } from './EventEmitter.ts';
+} from './hooks';
+import { EventType, useAdditionalListener } from './EventEmitter';
+import { Point, ShapeId, WrappedShapePropsInActions, Rectangle } from './types';
 
-const defaultDragState = {
-  dragStartCoordinates: null,
-  dragCurrentCoordinates: null,
+type DragState = {
+  dragStartCoordinates: Point;
+  dragCurrentCoordinates: Point;
+  isMouseDown: boolean;
+};
+const defaultDragState: DragState = {
+  dragStartCoordinates: { x: 0, y: 0 },
+  dragCurrentCoordinates: { x: 0, y: 0 },
   isMouseDown: false,
 };
 
@@ -94,11 +100,11 @@ const useMouseHandlerRef = (
     }));
   };
 
-  const mouseHandlerRef = useUpdatingRef(event => {
+  const mouseHandlerRef = useUpdatingRef((event: MouseEvent) => {
     if (event.type === 'mousemove') {
       onMouseMove(event);
     } else if (event.type === 'mouseup') {
-      onMouseUp(event);
+      onMouseUp();
     }
   });
 
@@ -108,7 +114,7 @@ const useMouseHandlerRef = (
 const useChildAddDeleteHandler = (
   eventEmitter,
   onSelectionChange,
-  selectedShapeIds,
+  selectedShapeIds: ShapeId[],
   selectionElRef,
   wrappedShapeActionRefsRef
 ) => {
@@ -161,9 +167,9 @@ const useChildAddDeleteHandler = (
   };
 
   const onChildToggleSelection = (
-    clickedShapeId,
-    isInternalComponent,
-    event
+    clickedShapeId: ShapeId,
+    isInternalComponent: boolean,
+    event: React.MouseEvent
   ) => {
     const isClickingSelection = clickedShapeId === SELECTION_COMPONENT_SHAPE_ID;
     if (isInternalComponent && !isClickingSelection) return;
@@ -174,28 +180,27 @@ const useChildAddDeleteHandler = (
     // selection rectangle absorbs the mouseDown event, so we have to
     // use the position of the click to retrieve the element under the mouse.
     if (isClickingSelection) {
-      const elementsUnderMouse =
-        typeof document.msElementsFromPoint === 'function'
-          ? Array.prototype.slice.call(
-              // msElementsFromPoint returns null when there are no elements
-              // found
-              document.msElementsFromPoint(event.clientX, event.clientY) || []
-            )
-          : document.elementsFromPoint(event.clientX, event.clientY);
+      const elementsUnderMouse = getElementsFromPoint(
+        event.clientX,
+        event.clientY
+      );
 
       // Only the child elements (e.g., <rect>) of the wrapShape <g> tags
       // get picked up by elementsFromPoint, so here we aim to access the
       // <g> tags (which contain the shapeId) by getting the parentNode
       // of each element found
       for (let i = 0; i < elementsUnderMouse.length; i += 1) {
-        const { parentNode } = elementsUnderMouse[i];
-        if (!parentNode) {
+        const parentNode = elementsUnderMouse[i].parentNode as
+          | SVGElement
+          | HTMLElement
+          | null;
+        if (!parentNode || !(parentNode instanceof SVGGElement)) {
           // eslint-disable-next-line no-continue
           continue;
         }
 
         // IE11-compatible way to get dataset info from SVG elements
-        let shapeId = null;
+        let shapeId: string | null | undefined;
         if (parentNode.dataset) {
           ({ shapeId } = parentNode.dataset);
         } else if (typeof parentNode.getAttribute === 'function') {
@@ -269,17 +274,48 @@ const useChildAddDeleteHandler = (
   useAdditionalListener(eventEmitter, EventType.ChildFocus, onChildFocus);
 };
 
-const SelectionLayer = ({
-  children,
-  keyboardTransformMultiplier,
-  onChange,
-  onDelete,
+const propTypes = {
+  children: PropTypes.node,
+  keyboardTransformMultiplier: PropTypes.number,
+  minimumDistanceForSelection: PropTypes.number,
+  onChange: PropTypes.func,
+  onDelete: PropTypes.func,
+  onSelectionChange: PropTypes.func.isRequired,
+  selectedShapeIds: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+  SelectionComponent: PropTypes.elementType,
+  selectionComponentProps: PropTypes.shape({}),
+  SelectionDrawComponent: PropTypes.elementType,
+};
+type Props = {
+  children?: ReactNodeLike;
+  keyboardTransformMultiplier?: number;
+  minimumDistanceForSelection?: number;
+  onChange?: (
+    nextRects: Rectangle[],
+    changedShapesProps: WrappedShapePropsInActions[]
+  ) => void;
+  onDelete?: (
+    event: React.KeyboardEvent,
+    deletedShapesProps: WrappedShapePropsInActions[]
+  ) => void;
+  onSelectionChange: (selectedShapeIds: ShapeId[]) => void;
+  selectedShapeIds: ShapeId[];
+  SelectionComponent?: ReactComponentLike;
+  selectionComponentProps?: object;
+  SelectionDrawComponent?: ReactComponentLike;
+};
+
+const SelectionLayer: React.FunctionComponent<Props> = ({
+  children = null,
+  keyboardTransformMultiplier = 1,
+  minimumDistanceForSelection = 15,
+  onChange = () => {},
+  onDelete = () => {},
   onSelectionChange,
   selectedShapeIds,
-  SelectionComponent,
-  selectionComponentProps,
-  SelectionDrawComponent,
-  minimumDistanceForSelection,
+  SelectionComponent = DefaultSelectionComponent,
+  selectionComponentProps = {},
+  SelectionDrawComponent = DefaultSelectionDrawComponent,
 }) => {
   const [
     { isMouseDown, dragStartCoordinates, dragCurrentCoordinates },
@@ -335,27 +371,27 @@ const SelectionLayer = ({
     selectionIsLargeEnough
   );
 
-  const draggedRect = isMouseDown
-    ? getRectFromCornerCoordinates(dragStartCoordinates, dragCurrentCoordinates)
-    : null;
-
   const selectedShapeActionRefs = selectedShapeIds
     .map(shapeId => wrappedShapeActionRefsRef.current[shapeId])
     .filter(Boolean);
 
-  let extra = null;
+  let extra: JSX.Element | null = null;
   if (isMouseDown) {
     if (selectionIsLargeEnough()) {
+      const selectionRect = getRectFromCornerCoordinates(
+        dragStartCoordinates,
+        dragCurrentCoordinates
+      );
       extra = (
         <SelectionDrawComponent
           shapeId="rse-internal-selection-draw-component"
           disabled
-          height={draggedRect.height}
+          height={selectionRect.height}
           isInternalComponent
           scale={scale}
-          width={draggedRect.width}
-          x={draggedRect.x}
-          y={draggedRect.y}
+          width={selectionRect.width}
+          x={selectionRect.x}
+          y={selectionRect.y}
         />
       );
     }
@@ -462,34 +498,6 @@ const SelectionLayer = ({
   );
 };
 
-SelectionLayer.propTypes = {
-  children: PropTypes.node,
-  keyboardTransformMultiplier: PropTypes.number,
-  minimumDistanceForSelection: PropTypes.number,
-  onChange: PropTypes.func,
-  onDelete: PropTypes.func,
-  onSelectionChange: PropTypes.func.isRequired,
-  selectedShapeIds: PropTypes.arrayOf(PropTypes.string).isRequired,
-  SelectionComponent: PropTypes.oneOfType([
-    PropTypes.func,
-    PropTypes.shape({}),
-  ]),
-  selectionComponentProps: PropTypes.shape({}),
-  SelectionDrawComponent: PropTypes.oneOfType([
-    PropTypes.func,
-    PropTypes.shape({}),
-  ]),
-};
-
-SelectionLayer.defaultProps = {
-  children: null,
-  keyboardTransformMultiplier: 1,
-  minimumDistanceForSelection: 15,
-  onChange: () => {},
-  onDelete: () => {},
-  SelectionComponent: DefaultSelectionComponent,
-  selectionComponentProps: {},
-  SelectionDrawComponent: DefaultSelectionDrawComponent,
-};
+SelectionLayer.propTypes = propTypes;
 
 export default SelectionLayer;

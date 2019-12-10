@@ -87,7 +87,7 @@ const EasyMode = ({
     }))
   );
 
-  const [selectedShapeIds, setSelectedShapeIds] = useState([]);
+  const [selectedShapeIds, setSelectedShapeIds] = useState([] as string[]);
 
   const [{ vectorHeight, vectorWidth }, setVectorDimensions] = useState({
     vectorHeight: 0,
