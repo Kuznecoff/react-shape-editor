@@ -46,14 +46,14 @@ export class EventEmitter {
     this.listeners = {};
   }
 
-  addListener(eventType: EventType, fn: ListenerRef): EventEmitter {
+  addListener(eventType: EventType, fn: ListenerRef): this {
     this.listeners[eventType] = this.listeners[eventType] || [];
     this.listeners[eventType].push(fn);
 
     return this;
   }
 
-  removeListener(eventType: EventType, fn: ListenerRef): EventEmitter {
+  removeListener(eventType: EventType, fn: ListenerRef): this {
     const matchingListeners = this.listeners[eventType];
     if (!matchingListeners) {
       return this;
@@ -69,10 +69,7 @@ export class EventEmitter {
     return this;
   }
 
-  overwriteAllListenersOfType(
-    eventType: EventType,
-    fn: ListenerRef
-  ): EventEmitter {
+  overwriteAllListenersOfType(eventType: EventType, fn: ListenerRef): this {
     delete this.listeners[eventType];
 
     return this.addListener(eventType, fn);

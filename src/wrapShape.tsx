@@ -278,7 +278,7 @@ const useShapeActions = (
   forceFocusCb: () => void,
   getSelectionChildUpdatedRect: GetSelectionChildUpdatedRect,
   setDragState: SetDragState
-) => {
+): ShapeActions => {
   const simulatedTransformRef = useRef(0);
   const shapeActions = {
     props,
@@ -565,10 +565,7 @@ function wrapShape(
     y: PropTypes.number.isRequired,
   };
 
-  const WrappedShape = React.forwardRef<
-    React.FunctionComponent<WrappedShapeProps>,
-    WrappedShapeProps
-  >(
+  const WrappedShape = React.forwardRef<ShapeActions, WrappedShapeProps>(
     (
       {
         // props extracted here are not passed to child
