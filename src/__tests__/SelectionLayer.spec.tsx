@@ -36,7 +36,7 @@ it('can delete a selection of shapes with keyboard shortcut', () => {
   expect(queryAllByTestId(SHAPE_TID)).toHaveLength(1);
 });
 
-it.skip('hides the selection rect after deleting', () => {
+it('hides the selection rect after deleting', () => {
   const { queryByTestId, selectionRect } = prepareSelection(true);
   fireEvent.keyDown(selectionRect, { key: 'Delete' });
   expect(queryByTestId(SELECTION_TID)).toBeNull();
@@ -190,7 +190,7 @@ it('can cancel out of selecting shapes with Escape key', () => {
   expect(queryByTestId(SELECTION_TID)).toBeNull();
 });
 
-it.skip('can select a lot of rectangles simultaneously', () => {
+it('can select a lot of rectangles simultaneously', () => {
   const { container, getByTestId, queryAllByTestId } = render(
     <EasyMode includeSelectionLayer initialItemCount={100} />
   );
