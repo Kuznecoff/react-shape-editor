@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import PropTypes, { ReactNodeLike, ReactComponentLike } from 'prop-types';
 import { getRectFromCornerCoordinates, getElementsFromPoint } from './utils';
 import useRootContext from './useRootContext';
@@ -121,7 +121,7 @@ const useChildAddDeleteHandler = (
   const selectedChildrenDidChangeRef = useRef(false);
   const forceUpdate = useForceUpdate();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (selectedChildrenDidChangeRef.current) {
       selectedChildrenDidChangeRef.current = false;
 

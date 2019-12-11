@@ -4,6 +4,7 @@ import React, {
   useState,
   useImperativeHandle,
   useCallback,
+  useLayoutEffect,
 } from 'react';
 import PropTypes from 'prop-types';
 import DefaultResizeHandleComponent from './DefaultResizeHandleComponent';
@@ -185,13 +186,13 @@ const useNotifyRoot = (
   shapeActions: ShapeActions
 ) => {
   // Notify of shape rectangle changes
-  useEffect(() => {
+  useLayoutEffect(() => {
     eventEmitter.emit(EventType.ChildRectChanged, shapeId, isInternalComponent);
   }, [height, width, x, y, shapeId, isInternalComponent, eventEmitter]);
 
   // Notify of mount/unmount
   const shapeActionsRef = useUpdatingRef(shapeActions);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isInternalComponent) {
       eventEmitter.emit(EventType.MountedOrUnmounted, shapeActionsRef, true);
     }

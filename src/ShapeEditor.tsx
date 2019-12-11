@@ -1,4 +1,9 @@
-import React, { useEffect, useRef, useImperativeHandle } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useImperativeHandle,
+  useLayoutEffect,
+} from 'react';
 import PropTypes from 'prop-types';
 import {
   CoordinateGetterRefProvider,
@@ -39,7 +44,7 @@ const useChildAddDeleteHandler = (
   const wrappedShapeActionRefsRef = useRef([] as ShapeActionRef[]);
   const lastDeletedRectRef = useRef(null as Rectangle | null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (justAddedShapeActionRefsRef.current.length > 0 && focusOnAdd) {
       // Focus on shapes added since the last update
       justAddedShapeActionRefsRef.current.slice(-1)[0].current.forceFocus();
