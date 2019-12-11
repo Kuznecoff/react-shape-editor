@@ -175,6 +175,10 @@ yarn build
 
 Pull requests are welcome!
 
+## Special Thanks
+
+[![CrossBrowserTesting.com](https://user-images.githubusercontent.com/4413963/70622179-b48f1180-1c5e-11ea-9b77-e38d8e878d5a.png)](https://crossbrowsertesting.com/)
+
 ## License
 
 MIT
