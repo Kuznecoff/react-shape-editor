@@ -41,6 +41,24 @@ function arrayReplace(arr, index, item) {
 }
 const to5 = n => Math.floor(n / 5) * 5;
 
+const constrainMove = ({ x, y, width, height, vectorHeight, vectorWidth }) => {
+  return {
+    x: to5(Math.min(vectorWidth - width, Math.max(0, x))),
+    y: to5(Math.min(vectorHeight - height, Math.max(0, y))),
+  };
+};
+
+const constrainResize = ({
+  movingCorner: { x: movingX, y: movingY },
+  vectorHeight,
+  vectorWidth,
+}) => {
+  return {
+    x: to5(Math.min(vectorWidth, Math.max(0, movingX))),
+    y: to5(Math.min(vectorHeight, Math.max(0, movingY))),
+  };
+};
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -61,26 +79,8 @@ class App extends Component {
       backgroundMode: 'select',
     };
 
-    this.constrainMove = this.constrainMove.bind(this);
-    this.constrainResize = this.constrainResize.bind(this);
     this.onShapeChange = this.onShapeChange.bind(this);
     this.onShapeDelete = this.onShapeDelete.bind(this);
-  }
-
-  constrainMove({ x, y, width, height }) {
-    const { vectorWidth, vectorHeight } = this.state;
-    return {
-      x: to5(Math.min(vectorWidth - width, Math.max(0, x))),
-      y: to5(Math.min(vectorHeight - height, Math.max(0, y))),
-    };
-  }
-
-  constrainResize({ movingCorner: { x: movingX, y: movingY } }) {
-    const { vectorWidth, vectorHeight } = this.state;
-    return {
-      x: to5(Math.min(vectorWidth, Math.max(0, movingX))),
-      y: to5(Math.min(vectorHeight, Math.max(0, movingY))),
-    };
   }
 
   onShapeChange(newRect, shapeProps) {
@@ -129,8 +129,8 @@ class App extends Component {
       return (
         <Shape
           key={id}
-          constrainMove={this.constrainMove}
-          constrainResize={this.constrainResize}
+          constrainMove={constrainMove}
+          constrainResize={constrainResize}
           height={height}
           keyboardTransformMultiplier={5}
           onChange={this.onShapeChange}
@@ -239,8 +239,8 @@ class App extends Component {
 
             {backgroundMode === 'draw' && (
               <DrawLayer
-                constrainMove={this.constrainMove}
-                constrainResize={this.constrainResize}
+                constrainMove={constrainMove}
+                constrainResize={constrainResize}
                 DrawPreviewComponent={
                   SHAPE_CHOICES[iterator % SHAPE_CHOICES.length]
                 }
