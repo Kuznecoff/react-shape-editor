@@ -13,7 +13,7 @@
     "prepublishOnly": "npm run lint && npm run test:once && npm run clean && npm run build",
     "test": "jest --watch --notify --notifyMode=change",
     "test:once": "jest",
-    "deploy": "gh-pages -d build",
+    "deploy": "gh-pages -d build -m 'Updates [skip ci]'",
     "prettier-check": "npm run prettier -- --check --write=false"
   },
   "main": "dist/index.cjs.js",
