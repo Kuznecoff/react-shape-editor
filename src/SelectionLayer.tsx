@@ -384,7 +384,7 @@ const SelectionLayer: React.FunctionComponent<Props> = ({
   const selectedShapeActionRefs = selectedShapeIds
     .map(shapeId => wrappedShapeActionRefsRef.current[shapeId])
     .filter(Boolean);
-
+  const simulatedTransformRef = useRef(0);
   let extra: JSX.Element | null = null;
   if (isMouseDown) {
     if (selectionIsLargeEnough()) {
@@ -418,12 +418,15 @@ const SelectionLayer: React.FunctionComponent<Props> = ({
         isInternalComponent
         ref={selectionElRef}
         onIntermediateChange={intermediateRect => {
-          selectedShapeActionRefs.forEach(shapeActionRef => {
-            const tempRect = shapeActionRef.current.getSelectionChildUpdatedRect(
-              selectionRect,
-              intermediateRect
-            );
-            shapeActionRef.current.simulateTransform(tempRect);
+          cancelAnimationFrame(simulatedTransformRef.current);
+          simulatedTransformRef.current = requestAnimationFrame(() => {
+            selectedShapeActionRefs.forEach(shapeActionRef => {
+              const tempRect = shapeActionRef.current.getSelectionChildUpdatedRect(
+                selectionRect,
+                intermediateRect
+              );
+              shapeActionRef.current.simulateTransform(tempRect);
+            });
           });
         }}
         onDelete={event => {
@@ -443,6 +446,7 @@ const SelectionLayer: React.FunctionComponent<Props> = ({
           );
 
           // Restore the shapes back to their original positions
+          cancelAnimationFrame(simulatedTransformRef.current);
           selectedShapeActionRefs.forEach(s => {
             s.current.simulateTransform(null);
           });

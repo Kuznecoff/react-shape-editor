@@ -279,30 +279,25 @@ const useShapeActions = (
   getSelectionChildUpdatedRect: GetSelectionChildUpdatedRect,
   setDragState: SetDragState
 ): ShapeActions => {
-  const simulatedTransformRef = useRef(0);
   const shapeActions = {
     props,
     forceFocus: forceFocusCb,
     getSelectionChildUpdatedRect,
     simulateTransform(nextRect: Rectangle) {
-      cancelAnimationFrame(simulatedTransformRef.current);
-
       if (!nextRect) {
         setDragState(defaultDragState);
         return;
       }
 
-      simulatedTransformRef.current = requestAnimationFrame(() => {
-        setDragState(lastDragState => ({
-          ...lastDragState,
-          isMouseDown: true,
-          dragStartCoordinates: { x: nextRect.x, y: nextRect.y },
-          dragCurrentCoordinates: {
-            x: nextRect.x + nextRect.width,
-            y: nextRect.y + nextRect.height,
-          },
-        }));
-      });
+      setDragState(lastDragState => ({
+        ...lastDragState,
+        isMouseDown: true,
+        dragStartCoordinates: { x: nextRect.x, y: nextRect.y },
+        dragCurrentCoordinates: {
+          x: nextRect.x + nextRect.width,
+          y: nextRect.y + nextRect.height,
+        },
+      }));
     },
   };
 
