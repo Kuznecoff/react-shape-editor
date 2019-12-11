@@ -358,7 +358,9 @@ const SelectionLayer: React.FunctionComponent<Props> = ({
   } = useRootContext();
 
   const selectionElRef = useRef();
-  const wrappedShapeActionRefsRef = useRef({});
+  const wrappedShapeActionRefsRef = useRef<{
+    [shapeId: string]: React.MutableRefObject<ShapeActions>;
+  }>({});
   useChildAddDeleteHandler(
     eventEmitter,
     onSelectionChange,

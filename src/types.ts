@@ -130,7 +130,7 @@ export interface ShapeActions {
   props: WrappedShapePropsInActions;
   forceFocus: () => void;
   getSelectionChildUpdatedRect: GetSelectionChildUpdatedRect;
-  simulateTransform: (nextRect: Rectangle) => void;
+  simulateTransform: (nextRect: Rectangle | null) => void;
 }
 
 export type HandleName = 'w' | 'n' | 's' | 'e' | 'nw' | 'ne' | 'sw' | 'se';
