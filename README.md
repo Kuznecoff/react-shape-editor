@@ -9,10 +9,6 @@ Basic yet flexible shape editor component
 - [Bounding Box Labeler](https://fritz-c.github.io/bounding-box-labeler/) by [@fritz-c](https://github.com/fritz-c) ([source](https://github.com/fritz-c/bounding-box-labeler))
 - _(Submit a PR to add yours here!)_
 
-**Note to prospective users and contributors**: This component is maintained as I see fit, which means _not maintained_ in most cases. My stance is that your fork is as good a base to create a great npm package as mine is (you can even namespace it like `@your-npm-id/react-shape-editor` if you want to leave a trail back to this project). Such is the freedom of open source.
-
-Please, before making a well-intentioned PR, create an issue to discuss the functionality/fixes you intend to add, and let's go from there. I will most likely not be adding more functionality, but I'm always interested in hearing ideas for improvements.
-
 ## Installation
 
 ```sh
