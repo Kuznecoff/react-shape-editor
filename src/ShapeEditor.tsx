@@ -81,7 +81,10 @@ const useChildAddDeleteHandler = (
 
   const editorMountedRef = useIsMountedRef();
 
-  const onShapeMountedOrUnmounted = (shapeActionsRef, didMount) => {
+  const onShapeMountedOrUnmounted = (
+    shapeActionsRef: React.MutableRefObject<ShapeActions>,
+    didMount: boolean
+  ) => {
     if (didMount) {
       // Only monitor shapes added after the initial editor render
       if (editorMountedRef.current) {

@@ -9,8 +9,14 @@ import {
   useForceUpdate,
   useUpdatingRef,
 } from './hooks';
-import { EventType, useAdditionalListener } from './EventEmitter';
-import { Point, ShapeId, WrappedShapePropsInActions, Rectangle } from './types';
+import { EventType, useAdditionalListener, EventEmitter } from './EventEmitter';
+import {
+  Point,
+  ShapeId,
+  WrappedShapePropsInActions,
+  Rectangle,
+  ShapeActions,
+} from './types';
 
 type DragState = {
   dragStartCoordinates: Point;
@@ -91,7 +97,7 @@ const useMouseHandlerRef = (
     }
   };
 
-  const onMouseMove = event => {
+  const onMouseMove = (event: MouseEvent) => {
     if (!isMouseDown) return;
 
     setDragState(dragState => ({
@@ -112,7 +118,7 @@ const useMouseHandlerRef = (
 };
 
 const useChildAddDeleteHandler = (
-  eventEmitter,
+  eventEmitter: EventEmitter,
   onSelectionChange,
   selectedShapeIds: ShapeId[],
   selectionElRef,
@@ -133,7 +139,10 @@ const useChildAddDeleteHandler = (
     }
   });
 
-  const onChildRectChanged = (shapeId, isInternalComponent) => {
+  const onChildRectChanged = (
+    shapeId: ShapeId,
+    isInternalComponent: boolean
+  ) => {
     if (isInternalComponent) return;
 
     if (
@@ -144,7 +153,10 @@ const useChildAddDeleteHandler = (
     }
   };
 
-  const onShapeMountedOrUnmounted = (shapeActionsRef, didMount: boolean) => {
+  const onShapeMountedOrUnmounted = (
+    shapeActionsRef: React.MutableRefObject<ShapeActions>,
+    didMount: boolean
+  ) => {
     const { shapeId } = shapeActionsRef.current.props;
     if (
       !selectedChildrenDidChangeRef.current &&
