@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="3.5.3"></a>
+## [3.5.3](https://github.com/fritz-c/react-shape-editor/compare/v3.5.2...v3.5.3) (2019-12-11)
+
+
+### Bug Fixes
+
+* avoid selection rect flashing due to effect timing ([2201e14](https://github.com/fritz-c/react-shape-editor/commit/2201e14))
+
+
+### Performance Improvements
+
+* speed up movement of large numbers of shapes (about 1.5x more FPS) ([184a51a](https://github.com/fritz-c/react-shape-editor/commit/184a51a))
+
+
+
 <a name="3.5.2"></a>
 ## [3.5.2](https://github.com/fritz-c/react-shape-editor/compare/v3.5.1...v3.5.2) (2019-12-10)
 
