@@ -2,7 +2,7 @@
 
 Basic yet flexible shape editor component
 
-[![shape-editor](https://user-images.githubusercontent.com/4413963/59026651-eb403580-8891-11e9-9fea-33843b6386c0.gif)](https://fritz-c.github.io/react-shape-editor/)
+[![shape-editor](https://user-images.githubusercontent.com/4413963/59026651-eb403580-8891-11e9-9fea-33843b6386c0.gif)](https://fritz-c.github.io/react-shape-editor/)[![shape-editor](https://user-images.githubusercontent.com/4413963/74218816-59c17700-4cee-11ea-97fb-29b6a299e0ec.gif)](https://codesandbox.io/s/video-labeling-react-shape-editor-86dxw)
 
 **Other projects using react-shape-editor:**
 
@@ -20,6 +20,7 @@ npm i react-shape-editor
 - [Basic Example with Drawing](https://codesandbox.io/s/basic-example-with-drawing-react-shape-editor-vcmj3)
 - [Selection or Drawing Toggle](https://codesandbox.io/s/selection-or-drawing-toggle-react-shape-editor-7zed8)
 - [Selection and Drawing Hybrid](https://codesandbox.io/s/selection-and-drawing-hybrid-react-shape-editor-kejgy)
+- [Bounding Boxes on Video](https://codesandbox.io/s/video-labeling-react-shape-editor-86dxw)
 - [Performance Test](https://codesandbox.io/s/performance-test-react-shape-editor-kpzwu)
 
 ## Components
